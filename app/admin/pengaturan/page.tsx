@@ -57,6 +57,7 @@ export default function PengaturanPage() {
         alert("Jam kerja berhasil disimpan!")
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleSaveHoliday = (data: any) => {
         console.log("Menyimpan Hari Libur:", data)
         setIsHolidayModalOpen(false)

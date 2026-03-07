@@ -3,12 +3,10 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { User, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, Shield } from "lucide-react"
+import { User, Lock, Eye, EyeOff, ArrowRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 export default function LoginPage() {
   const router = useRouter()

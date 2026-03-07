@@ -52,8 +52,10 @@ export default function LaporanRekapPage() {
     const [status, setStatus] = React.useState<string>("semua")
     const [search, setSearch] = React.useState("")
     const [isDetailOpen, setIsDetailOpen] = React.useState(false)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [selectedLaporan, setSelectedLaporan] = React.useState<any>(null)
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleViewDetail = (item: any) => {
         setSelectedLaporan({
             ...item,

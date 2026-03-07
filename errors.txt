@@ -1,0 +1,3 @@
+\app\admin\page.tsx:34 [2] Unexpected any. Specify a different type.
+\app\api\admin\dashboard\summary\route.ts:7 [1] '_request' is defined but never used.
+\components\DetailLaporanModal.tsx:163 [1] Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element

@@ -81,6 +81,7 @@ export default function ManajemenPegawaiPage() {
         setIsFormModalOpen(true)
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleEditPegawaiClick = (item: any) => {
         setFormModeData({
             id: item.id,
@@ -93,6 +94,7 @@ export default function ManajemenPegawaiPage() {
         setIsFormModalOpen(true)
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleSavePegawai = (data: any) => {
         console.log("Menyimpan data pegawai:", data)
         setIsFormModalOpen(false)

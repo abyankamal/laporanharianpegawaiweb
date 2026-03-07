@@ -1,13 +1,13 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import {
     FileText,
     Calendar,
     Clock,
     CheckSquare,
-    Image as ImageIcon,
-    User
+    Image as ImageIcon
 } from "lucide-react"
 
 import {
@@ -161,10 +161,12 @@ export function DetailLaporanModal({
                             Foto Pendukung / Bukti Kerja
                         </h4>
                         <div className="relative aspect-video overflow-hidden rounded-xl border shadow-sm">
-                            <img
+                            <Image
                                 src={data.fotoUrl}
                                 alt="Bukti Kerja"
-                                className="h-full w-full object-cover transition-transform hover:scale-105 duration-500"
+                                fill
+                                className="object-cover transition-transform hover:scale-105 duration-500"
+                                sizes="(max-width: 600px) 100vw, 600px"
                             />
                         </div>
                     </div>

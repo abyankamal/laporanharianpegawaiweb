@@ -91,6 +91,7 @@ export default function PemantauanTugasPage() {
         setIsFormModalOpen(true)
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleEditTugasClick = (item: any) => {
         setFormModeData({
             id: item.id,
@@ -105,6 +106,7 @@ export default function PemantauanTugasPage() {
         setIsFormModalOpen(true)
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleSaveTugas = (data: any) => {
         console.log("Menyimpan data tugas:", data)
         setIsFormModalOpen(false)

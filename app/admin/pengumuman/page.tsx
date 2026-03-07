@@ -84,6 +84,7 @@ export default function PusatPengumumanPage() {
         setIsFormModalOpen(true)
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleEditClick = (item: any) => {
         setFormModeData({
             id: item.id,
@@ -97,6 +98,7 @@ export default function PusatPengumumanPage() {
         setIsFormModalOpen(true)
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleSavePengumuman = (data: any) => {
         console.log("Menyimpan data pengumuman:", data)
         setIsFormModalOpen(false)
@@ -298,7 +300,7 @@ export default function PusatPengumumanPage() {
                 <div className="flex flex-col gap-1">
                     <h3 className="font-semibold text-blue-900 dark:text-blue-300">Tips Pengelolaan Pengumuman</h3>
                     <p className="text-sm text-blue-700 dark:text-blue-400/80 leading-relaxed">
-                        Pengumuman dengan status "Aktif" akan langsung muncul di dashboard utama seluruh pegawai yang menjadi target audiens. Anda juga dapat membuat pengumuman dengan status "Terjadwal" yang akan otomatis terpublikasi pada tanggal yang telah Anda tentukan.
+                        Pengumuman dengan status &quot;Aktif&quot; akan langsung muncul di dashboard utama seluruh pegawai yang menjadi target audiens. Anda juga dapat membuat pengumuman dengan status &quot;Terjadwal&quot; yang akan otomatis terpublikasi pada tanggal yang telah Anda tentukan.
                     </p>
                 </div>
             </div>
