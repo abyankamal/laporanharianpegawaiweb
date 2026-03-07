@@ -4,47 +4,52 @@ import axios from "axios";
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 export async function PUT(
-    request: NextRequest,
+    req: NextRequest,
     { params }: { params: { id: string } }
 ) {
     try {
-        const { id } = params;
-        const body = await request.json();
-        const response = await axios.put(`${BACKEND_URL}/api/admin/pengumuman/${id}`, body, {
+        const token = req.cookies.get("admin_token")?.value
+        const id = params.id
+        const body = await req.json()
+        const response = await fetch(`${BACKEND_URL}/api/admin/pengumuman/${id}`, {
+            method: "PUT",
             headers: {
-                Authorization: request.headers.get("Authorization"),
                 "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
             },
-        });
+            body: JSON.stringify(body),
+        })
 
-        return NextResponse.json(response.data);
-    } catch (error: any) {
-        console.error(`Error updating announcement ${params.id}:`, error.response?.data || error.message);
+        const data = await response.json()
+        return NextResponse.json(data)
+    } catch (error) {
         return NextResponse.json(
-            { success: false, message: error.response?.data?.message || "Failed to update announcement" },
-            { status: error.response?.status || 500 }
-        );
+            { status: "error", message: "Gagal menghubungi server backend" },
+            { status: 500 }
+        )
     }
 }
 
 export async function DELETE(
-    request: NextRequest,
+    req: NextRequest,
     { params }: { params: { id: string } }
 ) {
     try {
-        const { id } = params;
-        const response = await axios.delete(`${BACKEND_URL}/api/admin/pengumuman/${id}`, {
+        const token = req.cookies.get("admin_token")?.value
+        const id = params.id
+        const response = await fetch(`${BACKEND_URL}/api/admin/pengumuman/${id}`, {
+            method: "DELETE",
             headers: {
-                Authorization: request.headers.get("Authorization"),
+                "Authorization": `Bearer ${token}`,
             },
-        });
+        })
 
-        return NextResponse.json(response.data);
-    } catch (error: any) {
-        console.error(`Error deleting announcement ${params.id}:`, error.response?.data || error.message);
+        const data = await response.json()
+        return NextResponse.json(data)
+    } catch (error) {
         return NextResponse.json(
-            { success: false, message: error.response?.data?.message || "Failed to delete announcement" },
-            { status: error.response?.status || 500 }
-        );
+            { status: "error", message: "Gagal menghubungi server backend" },
+            { status: 500 }
+        )
     }
 }

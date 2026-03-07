@@ -1,8 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Bell } from "lucide-react"
-
+import { Bell, LogOut, Settings, User } from "lucide-react"
 import { AppSidebar } from "@/components/app-sidebar"
 import {
     Breadcrumb,
@@ -30,6 +29,82 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { UserProvider, useUser } from "@/components/UserContext"
+
+function AdminHeader() {
+    const { user, logout } = useUser();
+
+    return (
+        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-2 border-b bg-background/80 backdrop-blur-md px-4 shadow-sm transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+            <div className="flex items-center gap-2">
+                <SidebarTrigger className="-ml-1" />
+                <Separator orientation="vertical" className="mr-2 h-4" />
+                <Breadcrumb>
+                    <BreadcrumbList>
+                        <BreadcrumbItem className="hidden md:block">
+                            <BreadcrumbLink href="/admin">
+                                Admin
+                            </BreadcrumbLink>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator className="hidden md:block" />
+                        <BreadcrumbItem>
+                            <BreadcrumbPage>Dashboard</BreadcrumbPage>
+                        </BreadcrumbItem>
+                    </BreadcrumbList>
+                </Breadcrumb>
+            </div>
+
+            <div className="flex items-center gap-4">
+                <Button variant="ghost" size="icon" className="relative hover:bg-muted/50 transition-colors">
+                    <Bell className="size-4" />
+                    <span className="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-destructive ring-2 ring-background"></span>
+                </Button>
+
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-2 ring-transparent transition-all hover:ring-primary/20 focus-visible:ring-primary">
+                            <Avatar className="h-9 w-9 text-xs">
+                                <AvatarImage src={user?.foto_path || "/avatars/admin.png"} alt={user?.nama || "Admin"} />
+                                <AvatarFallback className="bg-primary text-primary-foreground">
+                                    {user?.nama?.substring(0, 2).toUpperCase() || "AD"}
+                                </AvatarFallback>
+                            </Avatar>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56" align="end" forceMount>
+                        <DropdownMenuLabel className="font-normal">
+                            <div className="flex flex-col space-y-1">
+                                <p className="text-sm font-medium leading-none">{user?.nama || "Admin Sukanegla"}</p>
+                                <p className="text-xs leading-none text-muted-foreground">
+                                    {user?.nip || "admin@sukanegla.desa.id"}
+                                </p>
+                            </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuGroup>
+                            <DropdownMenuItem>
+                                <User className="mr-2 h-4 w-4" />
+                                <span>Profil</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                                <Settings className="mr-2 h-4 w-4" />
+                                <span>Pengaturan</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                            className="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer"
+                            onClick={() => logout()}
+                        >
+                            <LogOut className="mr-2 h-4 w-4" />
+                            <span>Keluar</span>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+        </header>
+    );
+}
 
 export default function AdminLayout({
     children,
@@ -37,75 +112,18 @@ export default function AdminLayout({
     children: React.ReactNode
 }) {
     return (
-        <SidebarProvider>
+        <UserProvider>
             <TooltipProvider>
-                <AppSidebar />
-                <SidebarInset>
-                    <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-2 border-b bg-background/80 backdrop-blur-md px-4 shadow-sm transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-                        <div className="flex items-center gap-2">
-                            <SidebarTrigger className="-ml-1" />
-                            <Separator orientation="vertical" className="mr-2 h-4" />
-                            <Breadcrumb>
-                                <BreadcrumbList>
-                                    <BreadcrumbItem className="hidden md:block">
-                                        <BreadcrumbLink href="/admin">
-                                            Admin
-                                        </BreadcrumbLink>
-                                    </BreadcrumbItem>
-                                    <BreadcrumbSeparator className="hidden md:block" />
-                                    <BreadcrumbItem>
-                                        <BreadcrumbPage>Dashboard</BreadcrumbPage>
-                                    </BreadcrumbItem>
-                                </BreadcrumbList>
-                            </Breadcrumb>
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                            <Button variant="ghost" size="icon" className="relative hover:bg-muted/50 transition-colors">
-                                <Bell className="size-4" />
-                                <span className="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-destructive ring-2 ring-background"></span>
-                            </Button>
-
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-2 ring-transparent transition-all hover:ring-primary/20 focus-visible:ring-primary">
-                                        <Avatar className="h-9 w-9 text-xs">
-                                            <AvatarImage src="/avatars/admin.png" alt="Admin" />
-                                            <AvatarFallback className="bg-primary text-primary-foreground">AD</AvatarFallback>
-                                        </Avatar>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-56" align="end" forceMount>
-                                    <DropdownMenuLabel className="font-normal">
-                                        <div className="flex flex-col space-y-1">
-                                            <p className="text-sm font-medium leading-none">Admin Sukanegla</p>
-                                            <p className="text-xs leading-none text-muted-foreground">
-                                                admin@sukanegla.desa.id
-                                            </p>
-                                        </div>
-                                    </DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuGroup>
-                                        <DropdownMenuItem>
-                                            Profil
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem>
-                                            Pengaturan
-                                        </DropdownMenuItem>
-                                    </DropdownMenuGroup>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                        Keluar
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                    </header>
-                    <main className="flex flex-1 flex-col gap-4 p-4 md:p-6 bg-muted/10">
-                        {children}
-                    </main>
-                </SidebarInset>
+                <SidebarProvider>
+                    <AppSidebar />
+                    <SidebarInset>
+                        <AdminHeader />
+                        <main className="flex flex-1 flex-col gap-4 p-4 md:p-6 bg-muted/10">
+                            {children}
+                        </main>
+                    </SidebarInset>
+                </SidebarProvider>
             </TooltipProvider>
-        </SidebarProvider>
+        </UserProvider>
     )
 }

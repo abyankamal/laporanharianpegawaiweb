@@ -4,18 +4,31 @@ export interface LoginResponse {
     token?: string
 }
 
-export async function login(nip: string, password: string): Promise<LoginResponse> {
-    const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nip, password }),
-    })
-    return res.json()
+export interface UserProfile {
+    id: number;
+    nip: string;
+    nama: string;
+    role: string;
+    foto_path: string | null;
+    nama_jabatan: string;
 }
 
-export async function logout(): Promise<{ status: string; message: string }> {
-    const res = await fetch("/api/auth/logout", {
-        method: "POST",
-    })
-    return res.json()
-}
+export const login = async (nip: string, password: string): Promise<LoginResponse> => {
+    const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ nip, password })
+    });
+    return response.json();
+};
+
+export const logout = async (): Promise<void> => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+};
+
+export const getProfile = async (): Promise<{ status: string; data: UserProfile }> => {
+    const response = await fetch('/api/auth/profile');
+    return response.json();
+};

@@ -4,34 +4,51 @@ import axios from 'axios';
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export async function PUT(
-    request: NextRequest,
+    req: NextRequest,
     { params }: { params: { id: string } }
 ) {
     try {
-        const formData = await request.formData();
-        const response = await axios.put(`${BACKEND_URL}/api/admin/tasks/${params.id}`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-        });
-        return NextResponse.json(response.data);
-    } catch (error: any) {
+        const token = req.cookies.get("admin_token")?.value
+        const id = params.id
+        const body = await req.formData()
+        const response = await fetch(`${BACKEND_URL}/api/tasks/${id}`, {
+            method: "PUT",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+            },
+            body: body,
+        })
+
+        const data = await response.json()
+        return NextResponse.json(data)
+    } catch (error) {
         return NextResponse.json(
-            { success: false, message: error.response?.data?.message || 'Gagal memperbarui tugas' },
-            { status: error.response?.status || 500 }
-        );
+            { status: "error", message: "Gagal menghubungi server backend" },
+            { status: 500 }
+        )
     }
 }
 
 export async function DELETE(
-    _request: NextRequest,
+    req: NextRequest,
     { params }: { params: { id: string } }
 ) {
     try {
-        const response = await axios.delete(`${BACKEND_URL}/api/admin/tasks/${params.id}`);
-        return NextResponse.json(response.data);
-    } catch (error: any) {
+        const token = req.cookies.get("admin_token")?.value
+        const id = params.id
+        const response = await fetch(`${BACKEND_URL}/api/tasks/${id}`, {
+            method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+            },
+        })
+
+        const data = await response.json()
+        return NextResponse.json(data)
+    } catch (error) {
         return NextResponse.json(
-            { success: false, message: error.response?.data?.message || 'Gagal menghapus tugas' },
-            { status: error.response?.status || 500 }
-        );
+            { status: "error", message: "Gagal menghubungi server backend" },
+            { status: 500 }
+        )
     }
 }

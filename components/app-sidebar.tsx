@@ -28,6 +28,7 @@ import {
     SidebarMenuItem,
     SidebarRail,
 } from "@/components/ui/sidebar"
+import { useUser } from "@/components/UserContext"
 
 const navItems = [
     {
@@ -64,6 +65,7 @@ const navItems = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const pathname = usePathname()
+    const { logout } = useUser()
 
     return (
         <Sidebar collapsible="icon" {...props}>
@@ -127,7 +129,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarFooter>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" className="hover:bg-destructive/10 hover:text-destructive transition-colors">
+                        <SidebarMenuButton
+                            size="lg"
+                            className="hover:bg-destructive/10 hover:text-destructive transition-colors cursor-pointer"
+                            onClick={() => logout()}
+                        >
                             <LogOut className="size-4" />
                             <span>Keluar</span>
                         </SidebarMenuButton>

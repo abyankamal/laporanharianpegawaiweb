@@ -1,49 +1,51 @@
-import { NextRequest, NextResponse } from 'next/server';
-import axios from 'axios';
+import { NextRequest, NextResponse } from "next/server"
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
 
-export async function GET(request: NextRequest) {
+export async function GET(req: NextRequest) {
     try {
-        const { searchParams } = new URL(request.url);
-        const search = searchParams.get('search') || '';
-        const page = searchParams.get('page') || '1';
-        const limit = searchParams.get('limit') || '10';
+        const token = req.cookies.get("admin_token")?.value
+        const { searchParams } = new URL(req.url)
+        const search = searchParams.get("search") || ""
+        const page = searchParams.get("page") || "1"
+        const limit = searchParams.get("limit") || "10"
 
-        const response = await axios.get(`${BACKEND_URL}/api/admin/pegawai`, {
-            params: { search, page, limit }
-        });
+        const queryParams = new URLSearchParams({ search, page, limit }).toString()
 
-        return NextResponse.json(response.data, { status: 200 });
-    } catch (error: unknown) {
-        if (axios.isAxiosError(error)) {
-            console.error("Pegawai Proxy GET Error:", error.message);
-            if (error.response) {
-                return NextResponse.json(error.response.data, { status: error.response.status });
-            }
-        }
+        const response = await fetch(`${BACKEND_URL}/api/admin/pegawai?${queryParams}`, {
+            headers: {
+                "Authorization": `Bearer ${token}`,
+            },
+            cache: 'no-store'
+        })
+        const data = await response.json()
+        return NextResponse.json(data)
+    } catch (error) {
         return NextResponse.json(
-            { success: false, message: "Internal server error proxying pegawai data" },
+            { status: "error", message: "Gagal mengambil data pegawai" },
             { status: 500 }
-        );
+        )
     }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
     try {
-        const body = await request.json();
-        const response = await axios.post(`${BACKEND_URL}/api/admin/pegawai`, body);
-        return NextResponse.json(response.data, { status: 201 });
-    } catch (error: unknown) {
-        if (axios.isAxiosError(error)) {
-            console.error("Pegawai Proxy POST Error:", error.message);
-            if (error.response) {
-                return NextResponse.json(error.response.data, { status: error.response.status });
-            }
-        }
+        const token = req.cookies.get("admin_token")?.value
+        const body = await req.json()
+        const response = await fetch(`${BACKEND_URL}/api/admin/pegawai`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+            },
+            body: JSON.stringify(body),
+        })
+        const data = await response.json()
+        return NextResponse.json(data)
+    } catch (error) {
         return NextResponse.json(
-            { success: false, message: "Internal server error creating pegawai" },
+            { status: "error", message: "Gagal membuat data pegawai" },
             { status: 500 }
-        );
+        )
     }
 }

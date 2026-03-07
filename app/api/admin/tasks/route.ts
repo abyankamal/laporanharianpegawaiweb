@@ -1,33 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
-import axios from 'axios';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
-        const response = await axios.get(`${BACKEND_URL}/api/admin/tasks`, {
-            // In a real app, cookies/session would be handled here
-        });
-        return NextResponse.json(response.data);
-    } catch (error: any) {
+        const token = req.cookies.get("admin_token")?.value
+        const response = await fetch(`${BACKEND_URL}/api/tasks`, {
+            headers: {
+                "Authorization": `Bearer ${token}`,
+            },
+            cache: 'no-store'
+        })
+        const data = await response.json()
+        return NextResponse.json(data)
+    } catch (error) {
         return NextResponse.json(
-            { success: false, message: error.response?.data?.message || 'Gagal mengambil data tugas' },
-            { status: error.response?.status || 500 }
-        );
+            { status: "error", message: "Gagal menghubungi server backend" },
+            { status: 500 }
+        )
     }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
     try {
-        const formData = await request.formData();
-        const response = await axios.post(`${BACKEND_URL}/api/admin/tasks`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-        });
-        return NextResponse.json(response.data);
-    } catch (error: any) {
+        const token = req.cookies.get("admin_token")?.value
+        const body = await req.formData()
+        const response = await fetch(`${BACKEND_URL}/api/tasks`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+            },
+            body: body,
+        })
+        const data = await response.json()
+        return NextResponse.json(data)
+    } catch (error) {
         return NextResponse.json(
-            { success: false, message: error.response?.data?.message || 'Gagal membuat tugas baru' },
-            { status: error.response?.status || 500 }
-        );
+            { status: "error", message: "Gagal menghubungi server backend" },
+            { status: 500 }
+        )
     }
 }

@@ -1,48 +1,52 @@
-import { NextRequest, NextResponse } from "next/server";
-import axios from "axios";
+import { NextRequest, NextResponse } from "next/server"
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
 
-export async function GET(request: NextRequest) {
+export async function GET(req: NextRequest) {
     try {
-        const { searchParams } = new URL(request.url);
-        const search = searchParams.get("search") || "";
-        const page = searchParams.get("page") || "1";
-        const limit = searchParams.get("limit") || "10";
+        const token = req.cookies.get("admin_token")?.value
+        const { searchParams } = new URL(req.url)
+        const search = searchParams.get("search") || ""
+        const page = searchParams.get("page") || "1"
+        const limit = searchParams.get("limit") || "10"
 
-        const response = await axios.get(`${BACKEND_URL}/api/admin/pengumuman`, {
-            params: { search, page, limit },
+        const queryParams = new URLSearchParams({ search, page, limit }).toString()
+
+        const response = await fetch(`${BACKEND_URL}/api/admin/pengumuman?${queryParams}`, {
             headers: {
-                Authorization: request.headers.get("Authorization"),
+                "Authorization": `Bearer ${token}`,
             },
-        });
-
-        return NextResponse.json(response.data);
-    } catch (error: any) {
-        console.error("Error fetching announcements:", error.response?.data || error.message);
+            cache: 'no-store'
+        })
+        const data = await response.json()
+        return NextResponse.json(data)
+    } catch (error) {
         return NextResponse.json(
-            { success: false, message: error.response?.data?.message || "Failed to fetch announcements" },
-            { status: error.response?.status || 500 }
-        );
+            { status: "error", message: "Gagal menghubungi server backend" },
+            { status: 500 }
+        )
     }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
     try {
-        const body = await request.json();
-        const response = await axios.post(`${BACKEND_URL}/api/admin/pengumuman`, body, {
+        const token = req.cookies.get("admin_token")?.value
+        const body = await req.json()
+        const response = await fetch(`${BACKEND_URL}/api/admin/pengumuman`, {
+            method: "POST",
             headers: {
-                Authorization: request.headers.get("Authorization"),
                 "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
             },
-        });
+            body: JSON.stringify(body),
+        })
 
-        return NextResponse.json(response.data);
-    } catch (error: any) {
-        console.error("Error creating announcement:", error.response?.data || error.message);
+        const data = await response.json()
+        return NextResponse.json(data)
+    } catch (error) {
         return NextResponse.json(
-            { success: false, message: error.response?.data?.message || "Failed to create announcement" },
-            { status: error.response?.status || 500 }
-        );
+            { status: "error", message: "Gagal menghubungi server backend" },
+            { status: 500 }
+        )
     }
 }
