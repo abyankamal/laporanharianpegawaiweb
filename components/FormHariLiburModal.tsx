@@ -23,10 +23,12 @@ import {
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 
+import { createHoliday } from "@/lib/api/settings"
+
 interface FormHariLiburModalProps {
     isOpen: boolean
     onClose: () => void
-    onSave: (data: { date: DateRange | undefined; keterangan: string }) => void
+    onSave: () => void
 }
 
 export function FormHariLiburModal({
@@ -36,18 +38,46 @@ export function FormHariLiburModal({
 }: FormHariLiburModalProps) {
     const [date, setDate] = React.useState<DateRange | undefined>(undefined)
     const [keterangan, setKeterangan] = React.useState("")
+    const [isSubmitting, setIsSubmitting] = React.useState(false)
+    const [error, setError] = React.useState<string | null>(null)
 
     // Reset form when modal opens
     React.useEffect(() => {
         if (isOpen) {
             setDate(undefined)
             setKeterangan("")
+            setError(null)
         }
     }, [isOpen])
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        onSave({ date, keterangan })
+        if (!date?.from) {
+            setError("Silakan pilih tanggal")
+            return
+        }
+
+        setIsSubmitting(true)
+        setError(null)
+
+        try {
+            const res = await createHoliday({
+                tanggal_mulai: format(date.from, "yyyy-MM-dd"),
+                tanggal_selesai: format(date.to || date.from, "yyyy-MM-dd"),
+                keterangan,
+            })
+
+            if (res.status === "success") {
+                onSave()
+            } else {
+                setError(res.message || "Gagal menyimpan hari libur")
+            }
+        } catch (err) {
+            console.error(err)
+            setError("Terjadi kesalahan saat menghubungi server")
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     // Helper to format date text
@@ -123,14 +153,35 @@ export function FormHariLiburModal({
                         </div>
                     </div>
 
-                    <DialogFooter className="pt-4 border-t mt-2">
-                        <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto">
-                            Batal
-                        </Button>
-                        <Button type="submit" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
-                            <Save className="size-4" />
-                            <span>Simpan Hari Libur</span>
-                        </Button>
+                    <DialogFooter className="pt-4 border-t mt-2 flex flex-col gap-4">
+                        {error && (
+                            <div className="w-full p-3 bg-red-50 border border-red-100 rounded-md text-red-600 text-sm mb-2">
+                                {error}
+                            </div>
+                        )}
+                        <div className="flex justify-end gap-3 w-full">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={onClose}
+                                disabled={isSubmitting}
+                                className="w-full sm:w-auto"
+                            >
+                                Batal
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                            >
+                                {isSubmitting ? "Menyimpan..." : (
+                                    <>
+                                        <Save className="size-4" />
+                                        <span>Simpan Hari Libur</span>
+                                    </>
+                                )}
+                            </Button>
+                        </div>
                     </DialogFooter>
                 </form>
             </DialogContent>

@@ -2,6 +2,8 @@
 
 import * as React from "react"
 import { Clock, Save, Trash2, Plus } from "lucide-react"
+import { format } from "date-fns"
+import { id as localeID } from "date-fns/locale"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,49 +19,97 @@ import {
     TableRow,
 } from "@/components/ui/table"
 
-import { FormHariLiburModal } from "@/components/FormHariLiburModal"
+import {
+    getWorkHour,
+    updateWorkHour,
+    getHolidays,
+    deleteHoliday,
+    WorkHour,
+    Holiday,
+} from "@/lib/api/settings"
 
-// Dummy data for holidays
-const hariLiburData = [
-    {
-        id: 1,
-        tanggal: "17 Agustus 2026",
-        keterangan: "Hari Kemerdekaan RI",
-        type: "nasional" // indicates it should be red
-    },
-    {
-        id: 2,
-        tanggal: "25 Desember 2026",
-        keterangan: "Hari Raya Natal",
-        type: "umum" // indicates it should be gray
-    }
-]
+import { FormHariLiburModal } from "@/components/FormHariLiburModal"
 
 export default function PengaturanPage() {
     // State for Work Hours
+    const [id, setId] = React.useState<number | null>(null)
     const [jamMasukNormal, setJamMasukNormal] = React.useState("07:30")
     const [jamPulangNormal, setJamPulangNormal] = React.useState("16:00")
     const [jamMasukJumat, setJamMasukJumat] = React.useState("07:30")
     const [jamPulangJumat, setJamPulangJumat] = React.useState("16:30")
 
+    // State for Holidays
+    const [holidays, setHolidays] = React.useState<Holiday[]>([])
+    const [isLoadingHolidays, setIsLoadingHolidays] = React.useState(true)
+
     // State for Holiday Modal
     const [isHolidayModalOpen, setIsHolidayModalOpen] = React.useState(false)
 
-    const handleSaveJamKerja = (e: React.FormEvent) => {
+    const fetchSettings = React.useCallback(async () => {
+        try {
+            const whRes = await getWorkHour()
+            if (whRes.status === "success" && whRes.data) {
+                setId(whRes.data.id)
+                setJamMasukNormal(whRes.data.jam_masuk)
+                setJamPulangNormal(whRes.data.jam_pulang)
+                setJamMasukJumat(whRes.data.jam_masuk_jumat)
+                setJamPulangJumat(whRes.data.jam_pulang_jumat)
+            }
+
+            setIsLoadingHolidays(true)
+            const hRes = await getHolidays()
+            if (hRes.status === "success") {
+                setHolidays(hRes.data)
+            }
+        } catch (error) {
+            console.error("Gagal mengambil pengaturan:", error)
+        } finally {
+            setIsLoadingHolidays(false)
+        }
+    }, [])
+
+    React.useEffect(() => {
+        fetchSettings()
+    }, [fetchSettings])
+
+    const handleSaveJamKerja = async (e: React.FormEvent) => {
         e.preventDefault()
-        // Simulate save
-        console.log("Menyimpan Jam Kerja:", {
-            jamMasukNormal,
-            jamPulangNormal,
-            jamMasukJumat,
-            jamPulangJumat
-        })
-        alert("Jam kerja berhasil disimpan!")
+        try {
+            const res = await updateWorkHour({
+                jam_masuk: jamMasukNormal,
+                jam_pulang: jamPulangNormal,
+                jam_masuk_jumat: jamMasukJumat,
+                jam_pulang_jumat: jamPulangJumat,
+            })
+            if (res.status === "success") {
+                alert("Jam kerja berhasil disimpan!")
+            } else {
+                alert(res.message || "Gagal menyimpan jam kerja")
+            }
+        } catch (error) {
+            console.error(error)
+            alert("Terjadi kesalahan saat menyimpan jam kerja")
+        }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleSaveHoliday = (data: any) => {
-        console.log("Menyimpan Hari Libur:", data)
+    const handleDeleteHoliday = async (id: number) => {
+        if (!confirm("Apakah Anda yakin ingin menghapus hari libur ini?")) return
+
+        try {
+            const res = await deleteHoliday(id)
+            if (res.status === "success") {
+                fetchSettings()
+            } else {
+                alert(res.message || "Gagal menghapus hari libur")
+            }
+        } catch (error) {
+            console.error(error)
+            alert("Terjadi kesalahan saat menghapus hari libur")
+        }
+    }
+
+    const handleSaveHoliday = async () => {
+        fetchSettings()
         setIsHolidayModalOpen(false)
     }
 
@@ -185,35 +235,51 @@ export default function PengaturanPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {hariLiburData.map((item, index) => (
-                                <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
-                                    <TableCell className="pl-6 text-center font-medium text-foreground/70">
-                                        {index + 1}
-                                    </TableCell>
-                                    <TableCell className="font-medium text-foreground/80">
-                                        {item.tanggal}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge
-                                            variant="secondary"
-                                            className={item.type === "nasional"
-                                                ? "bg-red-50 text-red-600 hover:bg-red-50 rounded-md font-medium dark:bg-red-900/20"
-                                                : "bg-slate-100 text-slate-600 hover:bg-slate-100 rounded-md font-medium dark:bg-slate-800 dark:text-slate-400"}
-                                        >
-                                            {item.keterangan}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="pr-6 text-center">
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="size-8 rounded-full text-muted-foreground hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
-                                        >
-                                            <Trash2 className="size-4" />
-                                        </Button>
+                            {isLoadingHolidays ? (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="h-24 text-center">
+                                        Memuat data...
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            ) : holidays.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="h-24 text-center">
+                                        Tidak ada hari libur yang terdaftar.
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                holidays.map((item, index) => (
+                                    <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
+                                        <TableCell className="pl-6 text-center font-medium text-foreground/70">
+                                            {index + 1}
+                                        </TableCell>
+                                        <TableCell className="font-medium text-foreground/80">
+                                            {item.tanggal_mulai === item.tanggal_selesai
+                                                ? format(new Date(item.tanggal_mulai), "dd MMMM yyyy", { locale: localeID })
+                                                : `${format(new Date(item.tanggal_mulai), "dd MMM", { locale: localeID })} - ${format(new Date(item.tanggal_selesai), "dd MMM yyyy", { locale: localeID })}`
+                                            }
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant="secondary"
+                                                className="bg-red-50 text-red-600 hover:bg-red-50 rounded-md font-medium dark:bg-red-900/20"
+                                            >
+                                                {item.keterangan}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="pr-6 text-center">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="size-8 rounded-full text-muted-foreground hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
+                                                onClick={() => handleDeleteHoliday(item.id)}
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </div>
