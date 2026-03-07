@@ -120,3 +120,19 @@ export const getRekapLaporan = async (params: {
         }
     }
 }
+
+export const downloadReportsPDF = async (params: { start_date?: string, end_date?: string, user_id?: number }) => {
+    const queryParams = new URLSearchParams()
+    Object.entries(params).forEach(([key, value]) => {
+        if (value) queryParams.append(key, value.toString())
+    })
+    window.location.href = `/api/admin/rekap-laporan/export/pdf?${queryParams.toString()}`
+}
+
+export const downloadReportsExcel = async (params: { start_date?: string, end_date?: string, user_id?: number }) => {
+    const queryParams = new URLSearchParams()
+    Object.entries(params).forEach(([key, value]) => {
+        if (value) queryParams.append(key, value.toString())
+    })
+    window.location.href = `/api/admin/rekap-laporan/export/excel?${queryParams.toString()}`
+}

@@ -46,7 +46,7 @@ import {
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 
-import { getRekapLaporan, Report } from "@/lib/api/reports"
+import { getRekapLaporan, Report, downloadReportsPDF, downloadReportsExcel } from "@/lib/api/reports"
 
 export default function LaporanRekapPage() {
     const [startDate, setStartDate] = React.useState<Date>()
@@ -128,12 +128,25 @@ export default function LaporanRekapPage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        className="flex items-center gap-2"
+                        onClick={() => downloadReportsPDF({
+                            start_date: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
+                            end_date: endDate ? format(endDate, "yyyy-MM-dd") : undefined
+                        })}
+                    >
                         <FileText className="size-4" />
                         <span className="hidden sm:inline">Export PDF</span>
                         <span className="sm:hidden">PDF</span>
                     </Button>
-                    <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
+                    <Button
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                        onClick={() => downloadReportsExcel({
+                            start_date: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
+                            end_date: endDate ? format(endDate, "yyyy-MM-dd") : undefined
+                        })}
+                    >
                         <Download className="size-4" />
                         <span className="hidden sm:inline">Export to Excel</span>
                         <span className="sm:hidden">Excel</span>
