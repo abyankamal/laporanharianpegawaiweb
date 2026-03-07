@@ -85,7 +85,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                 </div>
                                 <div className="grid flex-1 text-left text-sm leading-tight ml-1">
                                     <span className="truncate font-bold tracking-tight text-foreground uppercase">SIOPIK Admin</span>
-                                    <span className="truncate text-xs font-medium text-muted-foreground">Desa Sukanegla</span>
+                                    <span className="truncate text-xs font-medium text-muted-foreground">Kelurahan Sukanegla</span>
                                 </div>
                             </Link>
                         </SidebarMenuButton>

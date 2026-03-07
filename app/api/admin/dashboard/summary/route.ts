@@ -12,10 +12,15 @@ export async function GET(req: NextRequest) {
             cache: 'no-store'
         })
         const data = await response.json()
+
+        if (data && data.status) {
+            data.success = data.status === "success"
+        }
+
         return NextResponse.json(data)
     } catch (error) {
         return NextResponse.json(
-            { status: "error", message: "Gagal mengambil ringkasan dashboard" },
+            { success: false, status: "error", message: "Gagal mengambil ringkasan dashboard" },
             { status: 500 }
         )
     }

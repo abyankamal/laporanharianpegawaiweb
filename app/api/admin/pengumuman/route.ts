@@ -19,10 +19,15 @@ export async function GET(req: NextRequest) {
             cache: 'no-store'
         })
         const data = await response.json()
+
+        if (data && data.status) {
+            data.success = data.status === "success"
+        }
+
         return NextResponse.json(data)
     } catch (error) {
         return NextResponse.json(
-            { status: "error", message: "Gagal menghubungi server backend" },
+            { success: false, status: "error", message: "Gagal menghubungi server backend" },
             { status: 500 }
         )
     }
@@ -42,10 +47,15 @@ export async function POST(req: NextRequest) {
         })
 
         const data = await response.json()
+
+        if (data && data.status) {
+            data.success = data.status === "success"
+        }
+
         return NextResponse.json(data)
     } catch (error) {
         return NextResponse.json(
-            { status: "error", message: "Gagal menghubungi server backend" },
+            { success: false, status: "error", message: "Gagal menghubungi server backend" },
             { status: 500 }
         )
     }

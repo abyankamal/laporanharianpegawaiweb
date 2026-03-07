@@ -10,8 +10,7 @@ import {
     ChevronLeft,
     ChevronRight,
     Users,
-    UserCheck,
-    CalendarDays
+    Check
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -27,6 +26,15 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal"
@@ -43,9 +51,10 @@ import {
 
 export default function ManajemenPegawaiPage() {
     // const { toast } = useToast()
-    const toast = ({ title, description }: { title: string, description: string, variant?: string }) => {
+    const toast = React.useCallback(({ title, description }: { title: string, description: string, variant?: string }) => {
         alert(`${title}: ${description}`)
-    }
+    }, [])
+
     const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false)
     const [selectedPegawai, setSelectedPegawai] = React.useState<Employee | null>(null)
     const [loading, setLoading] = React.useState(true)
@@ -60,15 +69,31 @@ export default function ManajemenPegawaiPage() {
     const [isFormModalOpen, setIsFormModalOpen] = React.useState(false)
     const [formModeData, setFormModeData] = React.useState<any | null>(null)
 
+    const [selectedRole, setSelectedRole] = React.useState<string>("Semua")
+    const [debouncedSearch, setDebouncedSearch] = React.useState("")
+
+    // Debounce search term
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchTerm)
+        }, 500)
+        return () => clearTimeout(timer)
+    }, [searchTerm])
+
     const fetchEmployees = React.useCallback(async () => {
         setLoading(true)
         try {
+            const roleValue = selectedRole === "Sekretaris" ? "sekertaris" : selectedRole.toLowerCase()
             const response = await getEmployees({
-                search: searchTerm,
+                search: debouncedSearch,
+                role: selectedRole === "Semua" ? "" : roleValue,
                 page: currentPage,
                 limit
             })
-            if (response.success) {
+            // Support both 'success' boolean and 'status === "success"'
+            const isSuccess = response.success || (response as any).status === "success"
+
+            if (isSuccess) {
                 setEmployees(response.data.list)
                 setTotalData(response.data.pagination.total_data)
                 setTotalPages(response.data.pagination.total_pages)
@@ -83,7 +108,7 @@ export default function ManajemenPegawaiPage() {
         } finally {
             setLoading(false)
         }
-    }, [searchTerm, currentPage, limit, toast])
+    }, [debouncedSearch, selectedRole, currentPage, limit, toast])
 
     React.useEffect(() => {
         fetchEmployees()
@@ -107,7 +132,6 @@ export default function ManajemenPegawaiPage() {
             jabatan: item.jabatan?.nama_jabatan || "",
             jabatan_id: item.jabatan_id,
             role: item.role,
-            status: "Aktif" // Backend doesn't have status yet, default to Aktif
         })
         setIsFormModalOpen(true)
     }
@@ -175,21 +199,39 @@ export default function ManajemenPegawaiPage() {
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-2">
                     <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <div className="relative w-full sm:w-72 md:w-80">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                            <Input
+                        <div className="flex items-center w-full sm:w-72 md:w-80 h-10 border border-input rounded-lg bg-background px-3 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
+                            <Search className="size-4 text-muted-foreground shrink-0" />
+                            <input
+                                className="flex h-full w-full bg-transparent px-3 py-1 text-sm outline-none placeholder:text-muted-foreground"
                                 placeholder="Cari nama, NIP, atau jabatan..."
                                 value={searchTerm}
                                 onChange={handleSearch}
                             />
                         </div>
-                        <Button variant="outline" size="icon" className="size-10 shrink-0 sm:hidden">
-                            <Filter className="size-4" />
-                        </Button>
-                        <Button variant="outline" className="h-10 hidden sm:flex items-center gap-2 shrink-0">
-                            <Filter className="size-4" />
-                            <span>Filter</span>
-                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" className="h-10 flex items-center gap-2 shrink-0">
+                                    <Filter className="size-4" />
+                                    <span>{selectedRole === "Semua" ? "Filter Role" : selectedRole}</span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuLabel>Filter berdasarkan Role</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                {["Semua", "Lurah", "Sekertaris", "Kasi", "Staf"].map((role) => (
+                                    <DropdownMenuCheckboxItem
+                                        key={role}
+                                        checked={selectedRole === (role === "Sekertaris" ? "Sekretaris" : role)}
+                                        onCheckedChange={() => {
+                                            setSelectedRole(role === "Sekertaris" ? "Sekretaris" : role)
+                                            setCurrentPage(1)
+                                        }}
+                                    >
+                                        {role === "Sekertaris" ? "Sekretaris" : role}
+                                    </DropdownMenuCheckboxItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                     <Button
                         className="w-full sm:w-auto h-10 flex items-center gap-2 shrink-0 bg-blue-600 hover:bg-blue-700"
@@ -211,7 +253,6 @@ export default function ManajemenPegawaiPage() {
                                 <TableHead className="min-w-[200px]">NAMA LENGKAP</TableHead>
                                 <TableHead className="min-w-[180px]">NIP</TableHead>
                                 <TableHead className="min-w-[180px]">JABATAN</TableHead>
-                                <TableHead className="text-center min-w-[120px]">STATUS</TableHead>
                                 <TableHead className="text-right min-w-[100px]">AKSI</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -247,18 +288,6 @@ export default function ManajemenPegawaiPage() {
                                         </TableCell>
                                         <TableCell className="text-sm">
                                             {item.jabatan?.nama_jabatan || "-"}
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <Badge
-                                                variant="secondary"
-                                                className={cn(
-                                                    "px-2.5 py-0.5 font-medium rounded-full border-transparent flex items-center justify-center gap-1.5 w-max mx-auto",
-                                                    "bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400"
-                                                )}
-                                            >
-                                                <span className="size-1.5 rounded-full bg-green-600" />
-                                                Aktif
-                                            </Badge>
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-1">
@@ -343,23 +372,8 @@ export default function ManajemenPegawaiPage() {
                 <Card className="shadow-sm border-muted-foreground/10">
                     <CardContent className="p-6 flex items-center justify-between">
                         <div className="flex flex-col gap-1">
-                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">Pegawai Aktif</span>
-                            <span className="text-2xl font-bold">21 <span className="text-sm font-semibold text-muted-foreground">Orang</span></span>
-                        </div>
-                        <div className="size-12 rounded-xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center text-green-600 dark:text-green-400">
-                            <UserCheck className="size-6" />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="shadow-sm border-muted-foreground/10">
-                    <CardContent className="p-6 flex items-center justify-between">
-                        <div className="flex flex-col gap-1">
-                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">Izin / Cuti</span>
-                            <span className="text-2xl font-bold">3 <span className="text-sm font-semibold text-muted-foreground">Orang</span></span>
-                        </div>
-                        <div className="size-12 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
-                            <CalendarDays className="size-6" />
+                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">Filter Data</span>
+                            <span className="text-sm text-muted-foreground">Gunakan pencarian untuk memfilter data pegawai.</span>
                         </div>
                     </CardContent>
                 </Card>

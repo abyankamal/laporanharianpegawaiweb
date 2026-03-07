@@ -47,7 +47,7 @@ export interface BaseResponse {
     message: string;
 }
 
-export const getEmployees = async (params?: { search?: string; page?: number; limit?: number }) => {
+export const getEmployees = async (params?: { search?: string; role?: string; page?: number; limit?: number }) => {
     const response = await axios.get<EmployeeListResponse>('/api/admin/pegawai', { params });
     return response.data;
 };

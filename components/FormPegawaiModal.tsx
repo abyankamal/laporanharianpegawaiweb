@@ -28,7 +28,6 @@ export interface PegawaiData {
     jabatan?: string
     jabatan_id?: number
     role: string
-    status: string
 }
 
 interface FormPegawaiModalProps {
@@ -43,7 +42,6 @@ const DEFAULT_FORM_DATA = {
     nama: "",
     jabatan_id: "",
     role: "",
-    status: "Aktif",
     password: ""
 }
 
@@ -88,7 +86,6 @@ export function FormPegawaiModal({
                     nama: pegawaiData.nama,
                     jabatan_id: pegawaiData.jabatan_id?.toString() || "",
                     role: pegawaiData.role.toLowerCase(),
-                    status: pegawaiData.status || "Aktif",
                     password: "",
                 })
             } else {
@@ -189,42 +186,23 @@ export function FormPegawaiModal({
                             </div>
                         </div>
 
-                        {/* Baris 4: Status & Password */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="status">Status</Label>
-                                <Select
-                                    value={formData.status}
-                                    onValueChange={(val) => handleInputChange("status", val)}
-                                    required
-                                >
-                                    <SelectTrigger id="status">
-                                        <SelectValue placeholder="Pilih Status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Aktif">Aktif</SelectItem>
-                                        <SelectItem value="Cuti">Cuti</SelectItem>
-                                        <SelectItem value="Non-Aktif">Non-Aktif</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="password">Password</Label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    placeholder={isEditMode ? "••••••••" : "Buat Password"}
-                                    value={formData.password}
-                                    onChange={(e) => handleInputChange("password", e.target.value)}
-                                    // Required only on Add Mode
-                                    required={!isEditMode}
-                                />
-                                {isEditMode && (
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        Kosongkan jika tidak diubah
-                                    </p>
-                                )}
-                            </div>
+                        {/* Baris 4: Password (Full Width) */}
+                        <div className="space-y-2">
+                            <Label htmlFor="password">Password</Label>
+                            <Input
+                                id="password"
+                                type="password"
+                                placeholder={isEditMode ? "••••••••" : "Buat Password"}
+                                value={formData.password}
+                                onChange={(e) => handleInputChange("password", e.target.value)}
+                                // Required only on Add Mode
+                                required={!isEditMode}
+                            />
+                            {isEditMode && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Kosongkan jika tidak diubah
+                                </p>
+                            )}
                         </div>
                     </div>
 

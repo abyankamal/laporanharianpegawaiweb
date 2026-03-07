@@ -1,22 +1,29 @@
-import { NextResponse } from 'next/server';
-import axios from 'axios';
+import { NextRequest, NextResponse } from "next/server"
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
 
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
-        const response = await axios.get(`${BACKEND_URL}/api/jabatan`);
-        return NextResponse.json(response.data, { status: 200 });
-    } catch (error: unknown) {
-        if (axios.isAxiosError(error)) {
-            console.error("Jabatan Proxy GET Error:", error.message);
-            if (error.response) {
-                return NextResponse.json(error.response.data, { status: error.response.status });
-            }
+        const token = req.cookies.get("admin_token")?.value
+
+        const response = await fetch(`${BACKEND_URL}/api/jabatan`, {
+            headers: {
+                "Authorization": `Bearer ${token}`,
+            },
+            cache: 'no-store'
+        })
+        const data = await response.json()
+
+        // Normalize response for frontend (ensure 'success' boolean exists)
+        if (data && data.status) {
+            data.success = data.status === "success"
         }
+
+        return NextResponse.json(data)
+    } catch (error) {
         return NextResponse.json(
-            { success: false, message: "Internal server error proxying jabatan data" },
+            { success: false, status: "error", message: "Gagal mengambil data jabatan" },
             { status: 500 }
-        );
+        )
     }
 }
