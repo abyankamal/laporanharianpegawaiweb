@@ -13,6 +13,7 @@ import {
     Megaphone,
     Clock,
     LogOut,
+    Briefcase
 } from "lucide-react"
 
 import {
@@ -40,6 +41,11 @@ const navItems = [
         title: "Manajemen Pegawai",
         url: "/admin/pegawai",
         icon: Users,
+    },
+    {
+        title: "Manajemen Jabatan",
+        url: "/admin/jabatan",
+        icon: Briefcase,
     },
     {
         title: "Rekap Laporan",
