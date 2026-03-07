@@ -4,6 +4,7 @@ import * as React from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { cn } from "@/lib/utils"
 import {
     LayoutDashboard,
     Users,
@@ -36,27 +37,27 @@ const navItems = [
     },
     {
         title: "Manajemen Pegawai",
-        url: "/pegawai",
+        url: "/admin/pegawai",
         icon: Users,
     },
     {
         title: "Rekap Laporan",
-        url: "/laporan",
+        url: "/admin/laporan",
         icon: FileText,
     },
     {
         title: "Pemantauan Tugas",
-        url: "/tugas",
+        url: "/admin/tugas",
         icon: CheckSquare,
     },
     {
         title: "Pusat Pengumuman",
-        url: "/pengumuman",
+        url: "/admin/pengumuman",
         icon: Megaphone,
     },
     {
         title: "Pengaturan Waktu",
-        url: "/pengaturan",
+        url: "/admin/pengaturan",
         icon: Clock,
     },
 ]
@@ -94,21 +95,31 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <SidebarGroupLabel>Menu Utama</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {navItems.map((item) => (
-                                <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton
-                                        asChild
-                                        tooltip={item.title}
-                                        isActive={pathname === item.url}
-                                        className="hover:bg-primary/5 hover:text-primary transition-all duration-200"
-                                    >
-                                        <Link href={item.url}>
-                                            <item.icon className="size-4" />
-                                            <span className="font-medium">{item.title}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
+                            {navItems.map((item) => {
+                                const isActive = pathname === item.url || (item.url !== "/admin" && pathname.startsWith(item.url))
+                                return (
+                                    <SidebarMenuItem key={item.title}>
+                                        <SidebarMenuButton
+                                            asChild
+                                            tooltip={item.title}
+                                            isActive={isActive}
+                                            className={cn(
+                                                "relative transition-all duration-200",
+                                                "hover:bg-primary/5 hover:text-primary",
+                                                isActive ? "bg-primary/10 text-primary font-bold shadow-sm" : "text-muted-foreground"
+                                            )}
+                                        >
+                                            <Link href={item.url}>
+                                                <item.icon className={cn("size-4", isActive && "text-primary")} />
+                                                <span className="flex-1">{item.title}</span>
+                                                {isActive && (
+                                                    <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 bg-primary rounded-r-full" />
+                                                )}
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                )
+                            })}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
