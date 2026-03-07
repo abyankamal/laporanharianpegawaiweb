@@ -3,19 +3,40 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { User, Lock, Eye, EyeOff, ArrowRight } from "lucide-react"
+import { User, Lock, Eye, EyeOff, ArrowRight, AlertCircle, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { login } from "@/lib/api/auth"
 
 export default function LoginPage() {
   const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
+  const [nip, setNip] = useState("")
+  const [password, setPassword] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Simulate login logic, then redirect
-    router.push("/admin")
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const res = await login(nip, password)
+
+      if (res.status === "success") {
+        router.push("/admin")
+        router.refresh() // Ensure middleware catches the new cookie
+      } else {
+        setError(res.message || "Kredensial tidak valid")
+      }
+    } catch (err) {
+      console.error(err)
+      setError("Gagal menghubungi server. Silakan coba lagi nanti.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const currentYear = new Date().getFullYear()
@@ -74,18 +95,29 @@ export default function LoginPage() {
             </div>
 
             <form onSubmit={handleLogin} className="space-y-5">
+              {/* Error Message */}
+              {error && (
+                <div className="p-3 rounded-xl bg-red-50 border border-red-100 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-600 font-medium">{error}</p>
+                </div>
+              )}
+
               {/* Username Input */}
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700 block">NIP</label>
+                <label className="text-sm font-semibold text-slate-700 block">NIP / Username</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <User className="h-5 w-5 text-slate-400" />
                   </div>
                   <Input
                     type="text"
-                    placeholder="Masukkan Username atau NIP"
+                    placeholder="Masukkan NIP Anda"
+                    value={nip}
+                    onChange={(e) => setNip(e.target.value)}
                     className="pl-10 h-12 bg-white/50 border-white/60 focus:bg-white/80 focus:ring-blue-500/50 shadow-sm backdrop-blur-sm transition-all"
                     required
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -102,13 +134,17 @@ export default function LoginPage() {
                   <Input
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-10 h-12 bg-white/50 border-white/60 focus:bg-white/80 focus:ring-blue-500/50 shadow-sm backdrop-blur-sm transition-all"
                     required
+                    disabled={isLoading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                    disabled={isLoading}
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
@@ -118,10 +154,20 @@ export default function LoginPage() {
               {/* Submit Button */}
               <Button
                 type="submit"
+                disabled={isLoading}
                 className="w-full h-12 mt-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2"
               >
-                Masuk ke Panel Admin
-                <ArrowRight className="h-4 w-4" />
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span>Memproses...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Masuk ke Panel Admin</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
               </Button>
             </form>
 
