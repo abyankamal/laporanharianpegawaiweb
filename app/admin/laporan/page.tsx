@@ -46,58 +46,76 @@ import {
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 
+import { getRekapLaporan, Report } from "@/lib/api/reports"
+
 export default function LaporanRekapPage() {
     const [startDate, setStartDate] = React.useState<Date>()
     const [endDate, setEndDate] = React.useState<Date>()
-    const [status, setStatus] = React.useState<string>("semua")
+    const [statusWaktu, setStatusWaktu] = React.useState<string>("semua")
+    const [statusReview, setStatusReview] = React.useState<string>("semua")
     const [search, setSearch] = React.useState("")
+    const [debouncedSearch, setDebouncedSearch] = React.useState("")
     const [isDetailOpen, setIsDetailOpen] = React.useState(false)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [selectedLaporan, setSelectedLaporan] = React.useState<any>(null)
+    const [reports, setReports] = React.useState<Report[]>([])
+    const [loading, setLoading] = React.useState(false)
+    const [currentPage, setCurrentPage] = React.useState(1)
+    const [totalPages, setTotalPages] = React.useState(1)
+    const [totalData, setTotalData] = React.useState(0)
+    const limit = 10
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleViewDetail = (item: any) => {
+    // Debounce search
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search)
+            setCurrentPage(1)
+        }, 500)
+        return () => clearTimeout(timer)
+    }, [search])
+
+    const fetchReports = React.useCallback(async () => {
+        setLoading(true)
+        try {
+            const response = await getRekapLaporan({
+                start_date: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
+                end_date: endDate ? format(endDate, "yyyy-MM-dd") : undefined,
+                status_waktu: statusWaktu === "semua" ? undefined : statusWaktu,
+                status_review: statusReview === "semua" ? undefined : statusReview,
+                search: debouncedSearch,
+                page: currentPage,
+                limit
+            })
+
+            if (response.success) {
+                setReports(response.data)
+                setTotalPages(response.pagination.total_pages)
+                setTotalData(response.pagination.total_data)
+            }
+        } catch (error) {
+            console.error("Error fetching reports:", error)
+        } finally {
+            setLoading(false)
+        }
+    }, [startDate, endDate, statusWaktu, statusReview, debouncedSearch, currentPage])
+
+    React.useEffect(() => {
+        fetchReports()
+    }, [fetchReports])
+
+    const handleViewDetail = (item: Report) => {
         setSelectedLaporan({
-            ...item,
-            nip: `19920815201903${item.id}001`,
-            fotoUrl: "https://images.unsplash.com/photo-1573163231162-717dfc3e4146?q=80&w=800",
-            deskripsi: item.laporan
+            nama: item.nama,
+            jabatan: item.jabatan,
+            nip: item.nip || "N/A",
+            tanggal: item.tanggal,
+            jam: item.jam_lapor,
+            statusWaktu: item.status_waktu,
+            statusReview: item.status_review,
+            deskripsi: item.deskripsi || item.laporan,
+            fotoUrl: item.foto_path || "https://images.unsplash.com/photo-1573163231162-717dfc3e4146?q=80&w=800"
         })
         setIsDetailOpen(true)
     }
-
-    const laporanData = [
-        {
-            id: 1,
-            tanggal: "2024-03-07",
-            nama: "Ahmad Fulan",
-            jabatan: "Kasi Pem",
-            laporan: "Monitoring pelaksanaan Posyandu di RW 04 dan pendataan warga baru.",
-            jamLapor: "08:15",
-            statusWaktu: "Tepat Waktu",
-            statusReview: "Disetujui"
-        },
-        {
-            id: 2,
-            tanggal: "2024-03-07",
-            nama: "Siti Aminah",
-            jabatan: "Staf Kesra",
-            laporan: "Penyusunan berkas bantuan sosial modal usaha untuk UMKM tingkat desa.",
-            jamLapor: "17:30",
-            statusWaktu: "Lembur",
-            statusReview: "Pending"
-        },
-        {
-            id: 3,
-            tanggal: "2024-03-06",
-            nama: "Budi Santoso",
-            jabatan: "Kaur Umum",
-            laporan: "Pemeliharaan inventaris kantor dan perbaikan jaringan internet balai desa.",
-            jamLapor: "08:05",
-            statusWaktu: "Tepat Waktu",
-            statusReview: "Disetujui"
-        }
-    ]
 
     return (
         <div className="flex flex-col gap-6 p-1">
@@ -145,14 +163,17 @@ export default function LaporanRekapPage() {
                                         )}
                                     >
                                         <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {startDate ? format(startDate, "PPP") : <span>mm/dd/yyyy</span>}
+                                        {startDate ? format(startDate, "PPP") : <span>Pilih Tanggal</span>}
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0" align="start">
                                     <Calendar
                                         mode="single"
                                         selected={startDate}
-                                        onSelect={setStartDate}
+                                        onSelect={(date) => {
+                                            setStartDate(date)
+                                            setCurrentPage(1)
+                                        }}
                                         initialFocus
                                     />
                                 </PopoverContent>
@@ -171,14 +192,17 @@ export default function LaporanRekapPage() {
                                         )}
                                     >
                                         <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {endDate ? format(endDate, "PPP") : <span>mm/dd/yyyy</span>}
+                                        {endDate ? format(endDate, "PPP") : <span>Pilih Tanggal</span>}
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0" align="start">
                                     <Calendar
                                         mode="single"
                                         selected={endDate}
-                                        onSelect={setEndDate}
+                                        onSelect={(date) => {
+                                            setEndDate(date)
+                                            setCurrentPage(1)
+                                        }}
                                         initialFocus
                                     />
                                 </PopoverContent>
@@ -187,7 +211,10 @@ export default function LaporanRekapPage() {
 
                         <div className="space-y-2">
                             <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Status Waktu</label>
-                            <Select value={status} onValueChange={setStatus}>
+                            <Select value={statusWaktu} onValueChange={(val) => {
+                                setStatusWaktu(val)
+                                setCurrentPage(1)
+                            }}>
                                 <SelectTrigger className="h-10">
                                     <SelectValue placeholder="Pilih Status" />
                                 </SelectTrigger>
@@ -201,22 +228,17 @@ export default function LaporanRekapPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Cari Pegawai</label>
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Cari Pegawai / Laporan</label>
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                                 <Input
-                                    placeholder="Nama atau Jabatan..."
+                                    placeholder="Nama, Jabatan, atau Isi Laporan..."
                                     className="pl-9 h-10"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                 />
                             </div>
                         </div>
-                    </div>
-                    <div className="flex justify-end mt-4">
-                        <Button variant="secondary" className="px-6 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400">
-                            Terapkan Filter
-                        </Button>
                     </div>
                 </CardContent>
             </Card>
@@ -239,82 +261,125 @@ export default function LaporanRekapPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {laporanData.map((item, index) => (
-                                    <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
-                                        <TableCell className="text-center font-medium">{index + 1}</TableCell>
-                                        <TableCell className="text-sm">{item.tanggal}</TableCell>
-                                        <TableCell>
-                                            <div className="flex flex-col">
-                                                <span className="font-semibold text-sm">{item.nama}</span>
-                                                <span className="text-xs text-muted-foreground">{item.jabatan}</span>
+                                {loading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={8} className="h-24 text-center">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <div className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                                                <span>Memuat data...</span>
                                             </div>
                                         </TableCell>
-                                        <TableCell>
-                                            <p className="text-sm line-clamp-2 max-w-[300px] text-muted-foreground">
-                                                {item.laporan}
-                                            </p>
-                                        </TableCell>
-                                        <TableCell className="text-center text-sm font-medium">
-                                            {item.jamLapor}
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <Badge
-                                                variant="secondary"
-                                                className={cn(
-                                                    "px-2.5 py-0.5 font-medium rounded-full border-transparent",
-                                                    item.statusWaktu === "Tepat Waktu"
-                                                        ? "bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400"
-                                                        : "bg-orange-100 text-orange-700 hover:bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400"
-                                                )}
-                                            >
-                                                {item.statusWaktu}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <Badge
-                                                variant="secondary"
-                                                className={cn(
-                                                    "px-2.5 py-0.5 font-medium rounded-full border-transparent",
-                                                    item.statusReview === "Disetujui"
-                                                        ? "bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400"
-                                                        : "bg-slate-100 text-slate-700 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300"
-                                                )}
-                                            >
-                                                {item.statusReview}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="size-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                                onClick={() => handleViewDetail(item)}
-                                            >
-                                                <Eye className="size-4" />
-                                            </Button>
+                                    </TableRow>
+                                ) : reports.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={8} className="h-24 text-center text-muted-foreground italic">
+                                            Tidak ada data laporan ditemukan
                                         </TableCell>
                                     </TableRow>
-                                ))}
+                                ) : (
+                                    reports.map((item, index) => (
+                                        <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
+                                            <TableCell className="text-center font-medium">
+                                                {(currentPage - 1) * limit + index + 1}
+                                            </TableCell>
+                                            <TableCell className="text-sm">{item.tanggal}</TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col">
+                                                    <span className="font-semibold text-sm">{item.nama}</span>
+                                                    <span className="text-xs text-muted-foreground">{item.jabatan}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <p className="text-sm line-clamp-2 max-w-[300px] text-muted-foreground">
+                                                    {item.laporan}
+                                                </p>
+                                            </TableCell>
+                                            <TableCell className="text-center text-sm font-medium">
+                                                {item.jam_lapor}
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <Badge
+                                                    variant="secondary"
+                                                    className={cn(
+                                                        "px-2.5 py-0.5 font-medium rounded-full border-transparent",
+                                                        item.status_waktu === "Tepat Waktu"
+                                                            ? "bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400"
+                                                            : "bg-orange-100 text-orange-700 hover:bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400"
+                                                    )}
+                                                >
+                                                    {item.status_waktu}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <Badge
+                                                    variant="secondary"
+                                                    className={cn(
+                                                        "px-2.5 py-0.5 font-medium rounded-full border-transparent",
+                                                        item.status_review === "Disetujui"
+                                                            ? "bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400"
+                                                            : "bg-slate-100 text-slate-700 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300"
+                                                    )}
+                                                >
+                                                    {item.status_review}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="size-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                                    onClick={() => handleViewDetail(item)}
+                                                >
+                                                    <Eye className="size-4" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
                             </TableBody>
                         </Table>
                     </div>
                 </CardContent>
-                <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t gap-4">
-                    <p className="text-xs text-muted-foreground order-2 sm:order-1">
-                        Menampilkan <span className="font-medium text-foreground">1-10</span> dari <span className="font-medium text-foreground">150</span> data
-                    </p>
-                    <div className="flex items-center gap-1 order-1 sm:order-2">
-                        <Button variant="outline" size="icon" className="size-8">
-                            <ChevronLeft className="size-4" />
-                        </Button>
-                        <Button variant="default" size="sm" className="size-8 p-0 text-xs">1</Button>
-                        <Button variant="outline" size="sm" className="size-8 p-0 text-xs">2</Button>
-                        <Button variant="outline" size="sm" className="size-8 p-0 text-xs">3</Button>
-                        <Button variant="outline" size="icon" className="size-8">
-                            <ChevronRight className="size-4" />
-                        </Button>
+                {reports.length > 0 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t gap-4">
+                        <p className="text-xs text-muted-foreground order-2 sm:order-1">
+                            Menampilkan <span className="font-medium text-foreground">{(currentPage - 1) * limit + 1}-{Math.min(currentPage * limit, totalData)}</span> dari <span className="font-medium text-foreground">{totalData}</span> data
+                        </p>
+                        <div className="flex items-center gap-1 order-1 sm:order-2">
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                className="size-8"
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                            >
+                                <ChevronLeft className="size-4" />
+                            </Button>
+
+                            {[...Array(totalPages)].map((_, i) => (
+                                <Button
+                                    key={i}
+                                    variant={currentPage === i + 1 ? "default" : "outline"}
+                                    size="sm"
+                                    className="size-8 p-0 text-xs"
+                                    onClick={() => setCurrentPage(i + 1)}
+                                >
+                                    {i + 1}
+                                </Button>
+                            ))}
+
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                className="size-8"
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages}
+                            >
+                                <ChevronRight className="size-4" />
+                            </Button>
+                        </div>
                     </div>
-                </div>
+                )}
             </Card>
 
             <DetailLaporanModal
