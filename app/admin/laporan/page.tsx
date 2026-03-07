@@ -9,10 +9,12 @@ import {
     Filter,
     Search,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    Eye
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { DetailLaporanModal } from "@/components/DetailLaporanModal"
 import { Input } from "@/components/ui/input"
 import {
     Select,
@@ -49,6 +51,18 @@ export default function LaporanRekapPage() {
     const [endDate, setEndDate] = React.useState<Date>()
     const [status, setStatus] = React.useState<string>("semua")
     const [search, setSearch] = React.useState("")
+    const [isDetailOpen, setIsDetailOpen] = React.useState(false)
+    const [selectedLaporan, setSelectedLaporan] = React.useState<any>(null)
+
+    const handleViewDetail = (item: any) => {
+        setSelectedLaporan({
+            ...item,
+            nip: `19920815201903${item.id}001`,
+            fotoUrl: "https://images.unsplash.com/photo-1573163231162-717dfc3e4146?q=80&w=800",
+            deskripsi: item.laporan
+        })
+        setIsDetailOpen(true)
+    }
 
     const laporanData = [
         {
@@ -219,6 +233,7 @@ export default function LaporanRekapPage() {
                                     <TableHead className="text-center">JAM LAPOR</TableHead>
                                     <TableHead className="text-center">STATUS WAKTU</TableHead>
                                     <TableHead className="text-center">STATUS REVIEW</TableHead>
+                                    <TableHead className="text-right">AKSI</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -266,6 +281,16 @@ export default function LaporanRekapPage() {
                                                 {item.statusReview}
                                             </Badge>
                                         </TableCell>
+                                        <TableCell className="text-right">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="size-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                                onClick={() => handleViewDetail(item)}
+                                            >
+                                                <Eye className="size-4" />
+                                            </Button>
+                                        </TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -289,6 +314,12 @@ export default function LaporanRekapPage() {
                     </div>
                 </div>
             </Card>
+
+            <DetailLaporanModal
+                isOpen={isDetailOpen}
+                onClose={() => setIsDetailOpen(false)}
+                data={selectedLaporan}
+            />
         </div>
     )
 }
