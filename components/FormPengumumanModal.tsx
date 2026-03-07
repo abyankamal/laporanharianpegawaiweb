@@ -30,28 +30,30 @@ import {
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 
+import { createAnnouncement, updateAnnouncement } from "@/lib/api/announcements"
+
 export interface PengumumanData {
     id?: number
     judul: string
     audience: string
     status: string
-    tanggalPublish?: string // In dummy data it's "07 Mar 2026", but here we might reconstruct it
-    waktuPublish?: string // e.g. "09:00"
-    isi?: string // Full content of announcement
+    tanggalPublish?: string // "yyyy-MM-dd"
+    waktuPublish?: string // "HH:mm"
+    isi?: string // pesan
 }
 
 interface FormPengumumanModalProps {
     isOpen: boolean
     onClose: () => void
-    onSave: (data: PengumumanData | Omit<PengumumanData, 'id'>) => void
+    onSave: () => void
     pengumumanData: PengumumanData | null
 }
 
 const DEFAULT_FORM_DATA = {
     judul: "",
-    audience: "",
-    status: "",
-    waktuPublish: "",
+    audience: "Semua Pegawai",
+    status: "Aktif",
+    waktuPublish: "08:00",
     isi: "",
 }
 
@@ -62,6 +64,8 @@ export function FormPengumumanModal({
     pengumumanData,
 }: FormPengumumanModalProps) {
     const isEditMode = !!pengumumanData
+    const [isSubmitting, setIsSubmitting] = React.useState(false)
+    const [error, setError] = React.useState<string | null>(null)
 
     // Base text fields
     const [formData, setFormData] = React.useState(DEFAULT_FORM_DATA)
@@ -72,24 +76,24 @@ export function FormPengumumanModal({
     // Populate data when modal opens in edit mode
     React.useEffect(() => {
         if (isOpen) {
+            setError(null)
             if (pengumumanData) {
                 setFormData({
                     judul: pengumumanData.judul || "",
-                    audience: pengumumanData.audience || "",
-                    status: pengumumanData.status || "",
-                    waktuPublish: pengumumanData.waktuPublish || "08:00", // Defaulting to 08:00 if not provided
+                    audience: pengumumanData.audience || "Semua Pegawai",
+                    status: pengumumanData.status || "Aktif",
+                    waktuPublish: pengumumanData.waktuPublish || "08:00",
                     isi: pengumumanData.isi || "",
                 })
 
-                // Very basic string to Date parsing for the dummy format "07 Mar 2026"
                 if (pengumumanData.tanggalPublish) {
-                    setPublishDate(new Date()) // Simplified parsing for demo
+                    setPublishDate(new Date(pengumumanData.tanggalPublish))
                 } else {
-                    setPublishDate(undefined)
+                    setPublishDate(new Date())
                 }
             } else {
                 setFormData(DEFAULT_FORM_DATA)
-                setPublishDate(undefined)
+                setPublishDate(new Date())
             }
         }
     }, [isOpen, pengumumanData])
@@ -98,24 +102,35 @@ export function FormPengumumanModal({
         setFormData((prev) => ({ ...prev, [field]: value }))
     }
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        setIsSubmitting(true)
+        setError(null)
 
-        // Format date nicely before saving
-        let formattedDate = ""
-        if (publishDate) {
-            formattedDate = format(publishDate, "dd MMM yyyy")
-        }
+        try {
+            const payload = {
+                judul: formData.judul,
+                pesan: formData.isi,
+                audience: formData.audience
+            }
 
-        const dataToSave = {
-            ...formData,
-            tanggalPublish: formattedDate
-        }
+            let response
+            if (isEditMode && pengumumanData?.id) {
+                response = await updateAnnouncement(pengumumanData.id, payload)
+            } else {
+                response = await createAnnouncement(payload)
+            }
 
-        if (isEditMode && pengumumanData?.id) {
-            onSave({ id: pengumumanData.id, ...dataToSave })
-        } else {
-            onSave(dataToSave)
+            if (response.success) {
+                onSave()
+            } else {
+                setError(response.message)
+            }
+        } catch (err: any) {
+            setError(err.response?.data?.message || "Gagal menyimpan pengumuman")
+            console.error(err)
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -238,14 +253,34 @@ export function FormPengumumanModal({
                         </div>
                     </div>
 
-                    <DialogFooter className="pt-4 border-t mt-2">
-                        <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto">
-                            Batal
-                        </Button>
-                        <Button type="submit" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
-                            {!isEditMode && <Send className="size-4" />}
-                            <span>{isEditMode ? "Simpan Perubahan" : "Publikasikan"}</span>
-                        </Button>
+                    <DialogFooter className="pt-4 border-t mt-2 flex flex-col gap-4">
+                        {error && (
+                            <div className="w-full p-3 bg-red-50 border border-red-100 rounded-md text-red-600 text-sm mb-2">
+                                {error}
+                            </div>
+                        )}
+                        <div className="flex justify-end gap-3 w-full">
+                            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting} className="w-full sm:w-auto">
+                                Batal
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <span className="animate-spin mr-1">⏳</span>
+                                        <span>Memproses...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        {!isEditMode && <Send className="size-4" />}
+                                        <span>{isEditMode ? "Simpan Perubahan" : "Publikasikan"}</span>
+                                    </>
+                                )}
+                            </Button>
+                        </div>
                     </DialogFooter>
                 </form>
             </DialogContent>

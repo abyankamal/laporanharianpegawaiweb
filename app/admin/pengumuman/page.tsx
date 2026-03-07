@@ -37,82 +37,112 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
+import { format } from "date-fns"
+import { id as localeID } from "date-fns/locale"
+
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal"
 import { FormPengumumanModal, PengumumanData } from "@/components/FormPengumumanModal"
-
-// Dummy data
-const pengumumanData = [
-    {
-        id: 1,
-        judul: "Apel Gabungan Besok Pagi",
-        kode: "ID: ANNC-2026-001",
-        tanggalPublish: "07 Mar 2026",
-        status: "Aktif",
-        audience: "Semua Pegawai"
-    },
-    {
-        id: 2,
-        judul: "Pembaruan Kebijakan Cuti Tahunan",
-        kode: "ID: ANNC-2026-002",
-        tanggalPublish: "10 Mar 2026",
-        status: "Terjadwal",
-        audience: "Semua Pegawai"
-    },
-    {
-        id: 3,
-        judul: "Jadwal Maintenance Server Utama",
-        kode: "ID: ANNC-2026-003",
-        tanggalPublish: "01 Feb 2026",
-        status: "Kedaluwarsa",
-        audience: "Staff IT & Admin"
-    }
-]
+import { getAnnouncements, deleteAnnouncement, Announcement, AnnouncementStatistik } from "@/lib/api/announcements"
 
 export default function PusatPengumumanPage() {
     const [search, setSearch] = React.useState("")
+    const [currentPage, setCurrentPage] = React.useState(1)
+    const [totalPages, setTotalPages] = React.useState(1)
     const [statusFilter, setStatusFilter] = React.useState("semua")
+    const [isLoading, setIsLoading] = React.useState(true)
+    const [error, setError] = React.useState<string | null>(null)
+
+    const [announcements, setAnnouncements] = React.useState<Announcement[]>([])
+    const [stats, setStats] = React.useState<AnnouncementStatistik>({
+        aktif: 0,
+        terjadwal: 0,
+        kedaluwarsa: 0
+    })
 
     // Modal State
     const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false)
-    const [selectedPengumuman, setSelectedPengumuman] = React.useState("")
+    const [selectedPengumuman, setSelectedPengumuman] = React.useState<Announcement | null>(null)
 
     const [isFormModalOpen, setIsFormModalOpen] = React.useState(false)
     const [formModeData, setFormModeData] = React.useState<PengumumanData | null>(null)
+
+    const fetchAnnouncements = React.useCallback(async () => {
+        setIsLoading(true)
+        setError(null)
+        try {
+            const response = await getAnnouncements(currentPage, 10, search)
+            if (response.success) {
+                setAnnouncements(response.data.list)
+                setStats(response.data.statistik)
+                setTotalPages(response.data.pagination.total_page)
+            } else {
+                setError(response.message)
+            }
+        } catch (err: any) {
+            setError("Gagal memuat data pengumuman")
+            console.error(err)
+        } finally {
+            setIsLoading(false)
+        }
+    }, [currentPage, search])
+
+    React.useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            fetchAnnouncements()
+        }, 300)
+        return () => clearTimeout(timeoutId)
+    }, [fetchAnnouncements])
 
     const handleCreateNewClick = () => {
         setFormModeData(null)
         setIsFormModalOpen(true)
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleEditClick = (item: any) => {
+    const handleEditClick = (item: Announcement) => {
+        // Extract ID from id_pengumuman (ANNC-2026-001 -> 1)
+        const parts = item.id_pengumuman.split("-")
+        const id = parseInt(parts[parts.length - 1])
+
         setFormModeData({
-            id: item.id,
+            id: id,
             judul: item.judul,
             audience: item.audience,
             status: item.status,
-            tanggalPublish: item.tanggalPublish,
-            waktuPublish: "08:00", // Dummy time
-            isi: `Ini adalah deskripsi isi pesan dummy untuk pengumuman ${item.judul}.` // Dummy content
+            tanggalPublish: format(new Date(item.tanggal), "yyyy-MM-dd"),
+            waktuPublish: format(new Date(item.tanggal), "HH:mm"),
+            isi: item.pesan
         })
         setIsFormModalOpen(true)
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleSavePengumuman = (data: any) => {
-        console.log("Menyimpan data pengumuman:", data)
+    const handleSavePengumuman = async () => {
+        fetchAnnouncements()
         setIsFormModalOpen(false)
     }
 
-    const handleDeleteClick = (judul: string) => {
-        setSelectedPengumuman(judul)
+    const handleDeleteClick = (item: Announcement) => {
+        setSelectedPengumuman(item)
         setIsDeleteModalOpen(true)
     }
 
-    const handleConfirmDelete = () => {
-        // Logika hapus
-        console.log(`Menghapus pengumuman: ${selectedPengumuman}`)
-        setIsDeleteModalOpen(false)
+    const handleConfirmDelete = async () => {
+        if (!selectedPengumuman) return
+
+        try {
+            const parts = selectedPengumuman.id_pengumuman.split("-")
+            const id = parseInt(parts[parts.length - 1])
+            const response = await deleteAnnouncement(id)
+            if (response.success) {
+                fetchAnnouncements()
+            } else {
+                alert(response.message)
+            }
+        } catch (err) {
+            console.error(err)
+            alert("Gagal menghapus pengumuman")
+        } finally {
+            setIsDeleteModalOpen(false)
+        }
     }
 
     return (
@@ -144,7 +174,7 @@ export default function PusatPengumumanPage() {
                         </div>
                         <div className="flex flex-col">
                             <span className="text-sm font-medium text-muted-foreground">Aktif Saat Ini</span>
-                            <span className="text-3xl font-bold text-foreground">12</span>
+                            <span className="text-3xl font-bold text-foreground">{stats.aktif}</span>
                         </div>
                     </CardContent>
                 </Card>
@@ -157,7 +187,7 @@ export default function PusatPengumumanPage() {
                         </div>
                         <div className="flex flex-col">
                             <span className="text-sm font-medium text-muted-foreground">Terjadwal</span>
-                            <span className="text-3xl font-bold text-foreground">4</span>
+                            <span className="text-3xl font-bold text-foreground">{stats.terjadwal}</span>
                         </div>
                     </CardContent>
                 </Card>
@@ -170,7 +200,7 @@ export default function PusatPengumumanPage() {
                         </div>
                         <div className="flex flex-col">
                             <span className="text-sm font-medium text-muted-foreground">Total Kedaluwarsa</span>
-                            <span className="text-3xl font-bold text-foreground">148</span>
+                            <span className="text-3xl font-bold text-foreground">{stats.kedaluwarsa}</span>
                         </div>
                     </CardContent>
                 </Card>
@@ -225,71 +255,118 @@ export default function PusatPengumumanPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {pengumumanData.map((item) => (
-                                <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
-                                    <TableCell className="pl-6">
-                                        <div className="flex flex-col py-1">
-                                            <span className="font-bold text-[15px] text-foreground leading-tight mb-1">
-                                                {item.judul}
-                                            </span>
-                                            <span className="text-xs font-mono text-muted-foreground">
-                                                {item.kode}
-                                            </span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-sm font-medium text-foreground/80">
-                                        {item.tanggalPublish}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge
-                                            variant="secondary"
-                                            className={cn(
-                                                "px-2.5 py-1 text-xs font-medium rounded-full border-transparent tracking-wide w-fit gap-1.5",
-                                                item.status === "Aktif" && "bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400",
-                                                item.status === "Terjadwal" && "bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400",
-                                                item.status === "Kedaluwarsa" && "bg-slate-100 text-slate-700 hover:bg-slate-100 dark:bg-slate-800/50 dark:text-slate-400"
-                                            )}
-                                        >
-                                            {item.status === "Aktif" && <span className="size-1.5 rounded-full bg-green-500 animate-pulse" />}
-                                            {item.status === "Terjadwal" && <span className="size-1.5 rounded-full bg-blue-500" />}
-                                            {item.status === "Kedaluwarsa" && <span className="size-1.5 rounded-full bg-slate-400" />}
-                                            {item.status}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2 text-muted-foreground bg-muted/50 w-fit px-2.5 py-1 rounded-md border text-sm">
-                                            <Users className="size-4 shrink-0" />
-                                            <span className="font-medium text-foreground/80">{item.audience}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-right pr-6">
-                                        <div className="flex items-center justify-end gap-1">
-                                            <Button variant="ghost" size="icon" className="size-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30">
-                                                <Eye className="size-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="size-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/30"
-                                                onClick={() => handleEditClick(item)}
-                                            >
-                                                <Pencil className="size-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="size-8 text-muted-foreground hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
-                                                onClick={() => handleDeleteClick(item.judul)}
-                                            >
-                                                <Trash2 className="size-4" />
-                                            </Button>
-                                        </div>
+                            {isLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="h-24 text-center">
+                                        Memuat data...
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            ) : announcements.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="h-24 text-center">
+                                        {error || "Tidak ada pengumuman yang ditemukan."}
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                announcements.map((item) => (
+                                    <TableRow key={item.id_pengumuman} className="hover:bg-muted/30 transition-colors">
+                                        <TableCell className="pl-6">
+                                            <div className="flex flex-col py-1">
+                                                <span className="font-bold text-[15px] text-foreground leading-tight mb-1">
+                                                    {item.judul}
+                                                </span>
+                                                <span className="text-xs font-mono text-muted-foreground">
+                                                    ID: {item.id_pengumuman}
+                                                </span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-sm font-medium text-foreground/80">
+                                            {format(new Date(item.tanggal), "dd MMM yyyy", { locale: localeID })}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant="secondary"
+                                                className={cn(
+                                                    "px-2.5 py-1 text-xs font-medium rounded-full border-transparent tracking-wide w-fit gap-1.5",
+                                                    item.status === "Aktif" && "bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400",
+                                                    item.status === "Terjadwal" && "bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400",
+                                                    item.status === "Kedaluwarsa" && "bg-slate-100 text-slate-700 hover:bg-slate-100 dark:bg-slate-800/50 dark:text-slate-400"
+                                                )}
+                                            >
+                                                {item.status === "Aktif" && <span className="size-1.5 rounded-full bg-green-500 animate-pulse" />}
+                                                {item.status === "Terjadwal" && <span className="size-1.5 rounded-full bg-blue-500" />}
+                                                {item.status === "Kedaluwarsa" && <span className="size-1.5 rounded-full bg-slate-400" />}
+                                                {item.status}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2 text-muted-foreground bg-muted/50 w-fit px-2.5 py-1 rounded-md border text-sm">
+                                                <Users className="size-4 shrink-0" />
+                                                <span className="font-medium text-foreground/80">{item.audience}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right pr-6">
+                                            <div className="flex items-center justify-end gap-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="size-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                                                    onClick={() => {
+                                                        alert(item.pesan)
+                                                    }}
+                                                >
+                                                    <Eye className="size-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="size-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/30"
+                                                    onClick={() => handleEditClick(item)}
+                                                >
+                                                    <Pencil className="size-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="size-8 text-muted-foreground hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
+                                                    onClick={() => handleDeleteClick(item)}
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </div>
+
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between px-6 py-4 border-t bg-muted/10">
+                        <p className="text-sm text-muted-foreground">
+                            Halaman <span className="font-medium text-foreground">{currentPage}</span> dari <span className="font-medium text-foreground">{totalPages}</span>
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                            >
+                                Sebelumnya
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                            >
+                                Selanjutnya
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </Card>
 
             {/* Bagian Tips (Footer Halaman) */}
@@ -310,7 +387,7 @@ export default function PusatPengumumanPage() {
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={handleConfirmDelete}
-                itemName={selectedPengumuman}
+                itemName={selectedPengumuman?.judul || ""}
             />
 
             {/* Integasi Modal Form Pengumuman */}
