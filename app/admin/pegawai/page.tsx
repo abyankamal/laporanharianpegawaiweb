@@ -32,83 +32,135 @@ import { cn } from "@/lib/utils"
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal"
 import { FormPegawaiModal, PegawaiData } from "@/components/FormPegawaiModal"
 
-// Dummy data
-const pegawaiData = [
-    {
-        id: 1,
-        nama: "Budi Santoso",
-        nip: "198501012010011001",
-        jabatan: "Kepala Desa",
-        status: "Aktif",
-        foto: "BS"
-    },
-    {
-        id: 2,
-        nama: "Siti Aminah",
-        nip: "198802152012122002",
-        jabatan: "Sekretaris Desa",
-        status: "Cuti",
-        foto: "SA"
-    },
-    {
-        id: 3,
-        nama: "Ahmad Riyadi",
-        nip: "199011202015041003",
-        jabatan: "Kaur Keuangan",
-        status: "Aktif",
-        foto: "AR"
-    },
-    {
-        id: 4,
-        nama: "Dewi Lestari",
-        nip: "199307082018012004",
-        jabatan: "Kasi Kesejahteraan",
-        status: "Non-Aktif",
-        foto: "DL"
-    }
-]
+import {
+    getEmployees,
+    deleteEmployee,
+    createEmployee,
+    updateEmployee,
+    Employee
+} from "@/lib/api/employees"
+// import { useToast } from "@/components/ui/use-toast"
 
 export default function ManajemenPegawaiPage() {
+    // const { toast } = useToast()
+    const toast = ({ title, description }: { title: string, description: string, variant?: string }) => {
+        alert(`${title}: ${description}`)
+    }
     const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false)
-    const [selectedPegawai, setSelectedPegawai] = React.useState("")
+    const [selectedPegawai, setSelectedPegawai] = React.useState<Employee | null>(null)
+    const [loading, setLoading] = React.useState(true)
+    const [employees, setEmployees] = React.useState<Employee[]>([])
+    const [totalData, setTotalData] = React.useState(0)
+    const [currentPage, setCurrentPage] = React.useState(1)
+    const [totalPages, setTotalPages] = React.useState(1)
+    const [searchTerm, setSearchTerm] = React.useState("")
+    const [limit] = React.useState(10)
 
     // Form Modal States
     const [isFormModalOpen, setIsFormModalOpen] = React.useState(false)
-    const [formModeData, setFormModeData] = React.useState<PegawaiData | null>(null)
+    const [formModeData, setFormModeData] = React.useState<any | null>(null)
+
+    const fetchEmployees = React.useCallback(async () => {
+        setLoading(true)
+        try {
+            const response = await getEmployees({
+                search: searchTerm,
+                page: currentPage,
+                limit
+            })
+            if (response.success) {
+                setEmployees(response.data.list)
+                setTotalData(response.data.pagination.total_data)
+                setTotalPages(response.data.pagination.total_pages)
+            }
+        } catch (error) {
+            console.error("Error fetching employees:", error)
+            toast({
+                title: "Error",
+                description: "Gagal mengambil data pegawai",
+                variant: "destructive",
+            })
+        } finally {
+            setLoading(false)
+        }
+    }, [searchTerm, currentPage, limit, toast])
+
+    React.useEffect(() => {
+        fetchEmployees()
+    }, [fetchEmployees])
+
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(e.target.value)
+        setCurrentPage(1)
+    }
 
     const handleAddPegawaiClick = () => {
-        setFormModeData(null) // null indicates Add Mode
+        setFormModeData(null)
         setIsFormModalOpen(true)
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleEditPegawaiClick = (item: any) => {
+    const handleEditPegawaiClick = (item: Employee) => {
         setFormModeData({
             id: item.id,
             nip: item.nip,
             nama: item.nama,
-            jabatan: item.jabatan,
-            role: "Pegawai", // Default role for dummy data mapping
-            status: item.status
+            jabatan: item.jabatan?.nama_jabatan || "",
+            jabatan_id: item.jabatan_id,
+            role: item.role,
+            status: "Aktif" // Backend doesn't have status yet, default to Aktif
         })
         setIsFormModalOpen(true)
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleSavePegawai = (data: any) => {
-        console.log("Menyimpan data pegawai:", data)
-        setIsFormModalOpen(false)
+    const handleSavePegawai = async (data: any) => {
+        try {
+            // Map frontend data to backend structure
+            // Backend expects 'role' and 'jabatan_id' (uint)
+            const payload = {
+                nip: data.nip,
+                nama: data.nama,
+                role: data.role.toLowerCase(),
+                jabatan_id: data.jabatan_id ? Number(data.jabatan_id) : undefined,
+                password: data.password || undefined
+            }
+
+            if (data.id) {
+                await updateEmployee(data.id, payload)
+                toast({ title: "Sukses", description: "Data pegawai berhasil diperbarui" })
+            } else {
+                await createEmployee(payload)
+                toast({ title: "Sukses", description: "Pegawai baru berhasil ditambahkan" })
+            }
+            setIsFormModalOpen(false)
+            fetchEmployees()
+        } catch (error: any) {
+            toast({
+                title: "Error",
+                description: error.response?.data?.message || "Gagal menyimpan data pegawai",
+                variant: "destructive",
+            })
+        }
     }
 
-    const handleDeleteClick = (nama: string) => {
-        setSelectedPegawai(nama)
+    const handleDeleteClick = (pegawai: Employee) => {
+        setSelectedPegawai(pegawai)
         setIsDeleteModalOpen(true)
     }
 
-    const handleConfirmDelete = () => {
-        // Implementasi logika penghapusan di sini
-        console.log(`Menghapus pegawai: ${selectedPegawai}`)
-        setIsDeleteModalOpen(false)
+    const handleConfirmDelete = async () => {
+        if (!selectedPegawai) return
+        try {
+            await deleteEmployee(selectedPegawai.id)
+            toast({ title: "Sukses", description: "Data pegawai berhasil dihapus" })
+            setIsDeleteModalOpen(false)
+            fetchEmployees()
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: "Gagal menghapus data pegawai",
+                variant: "destructive",
+            })
+        }
     }
 
     return (
@@ -127,7 +179,8 @@ export default function ManajemenPegawaiPage() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                             <Input
                                 placeholder="Cari nama, NIP, atau jabatan..."
-                                className="pl-9 h-10 w-full"
+                                value={searchTerm}
+                                onChange={handleSearch}
                             />
                         </div>
                         <Button variant="outline" size="icon" className="size-10 shrink-0 sm:hidden">
@@ -163,80 +216,110 @@ export default function ManajemenPegawaiPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {pegawaiData.map((item) => (
-                                <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
-                                    <TableCell className="text-center">
-                                        <Avatar className="size-8 mx-auto border-2 border-background shadow-sm">
-                                            <AvatarImage src={`/avatars/${item.id}.png`} alt={item.nama} />
-                                            <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                                                {item.foto}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                    </TableCell>
-                                    <TableCell className="font-semibold text-sm">
-                                        {item.nama}
-                                    </TableCell>
-                                    <TableCell className="font-mono text-sm text-muted-foreground">
-                                        {item.nip}
-                                    </TableCell>
-                                    <TableCell className="text-sm">
-                                        {item.jabatan}
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        <Badge
-                                            variant="secondary"
-                                            className={cn(
-                                                "px-2.5 py-0.5 font-medium rounded-full border-transparent flex items-center justify-center gap-1.5 w-max mx-auto",
-                                                item.status === "Aktif" && "bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400",
-                                                item.status === "Cuti" && "bg-amber-100 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400",
-                                                item.status === "Non-Aktif" && "bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400"
-                                            )}
-                                        >
-                                            {item.status === "Aktif" && <span className="size-1.5 rounded-full bg-green-600" />}
-                                            {item.status}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex items-center justify-end gap-1">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="size-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                                onClick={() => handleEditPegawaiClick(item)}
-                                            >
-                                                <Pencil className="size-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="size-8 text-muted-foreground hover:text-red-600 hover:bg-red-50"
-                                                onClick={() => handleDeleteClick(item.nama)}
-                                            >
-                                                <Trash2 className="size-4" />
-                                            </Button>
-                                        </div>
+                            {loading ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center py-10">
+                                        Memuat data...
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            ) : employees.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center py-10">
+                                        Tidak ada data pegawai.
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                employees.map((item) => (
+                                    <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
+                                        <TableCell className="text-center">
+                                            <Avatar className="size-8 mx-auto border-2 border-background shadow-sm">
+                                                <AvatarImage src={item.foto_path ? `/${item.foto_path}` : ""} alt={item.nama} />
+                                                <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                                                    {item.nama.substring(0, 2).toUpperCase()}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                        </TableCell>
+                                        <TableCell className="font-semibold text-sm">
+                                            {item.nama}
+                                        </TableCell>
+                                        <TableCell className="font-mono text-sm text-muted-foreground">
+                                            {item.nip}
+                                        </TableCell>
+                                        <TableCell className="text-sm">
+                                            {item.jabatan?.nama_jabatan || "-"}
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <Badge
+                                                variant="secondary"
+                                                className={cn(
+                                                    "px-2.5 py-0.5 font-medium rounded-full border-transparent flex items-center justify-center gap-1.5 w-max mx-auto",
+                                                    "bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400"
+                                                )}
+                                            >
+                                                <span className="size-1.5 rounded-full bg-green-600" />
+                                                Aktif
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex items-center justify-end gap-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="size-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                                    onClick={() => handleEditPegawaiClick(item)}
+                                                >
+                                                    <Pencil className="size-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="size-8 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+                                                    onClick={() => handleDeleteClick(item)}
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </div>
                 <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t gap-4">
                     <p className="text-xs text-muted-foreground order-2 sm:order-1">
-                        Menampilkan <span className="font-medium text-foreground">1</span> sampai <span className="font-medium text-foreground">4</span> dari <span className="font-medium text-foreground">24</span> entri
+                        Menampilkan <span className="font-medium text-foreground">{employees.length > 0 ? (currentPage - 1) * limit + 1 : 0}</span> sampai <span className="font-medium text-foreground">{Math.min(currentPage * limit, totalData)}</span> dari <span className="font-medium text-foreground">{totalData}</span> entri
                     </p>
                     <div className="flex items-center gap-1 order-1 sm:order-2">
-                        <Button variant="outline" size="icon" className="size-8">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="size-8"
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                        >
                             <ChevronLeft className="size-4" />
                         </Button>
-                        <Button variant="default" size="sm" className="size-8 p-0 text-xs shadow-sm">1</Button>
-                        <Button variant="outline" size="sm" className="size-8 p-0 text-xs">2</Button>
-                        <Button variant="outline" size="sm" className="size-8 p-0 text-xs">3</Button>
-                        <Button variant="ghost" size="icon" className="size-8 cursor-default hover:bg-transparent">
-                            <span className="text-muted-foreground">...</span>
-                        </Button>
-                        <Button variant="outline" size="sm" className="size-8 p-0 text-xs">6</Button>
-                        <Button variant="outline" size="icon" className="size-8">
+                        <div className="flex items-center gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                                <Button
+                                    key={p}
+                                    variant={currentPage === p ? "default" : "outline"}
+                                    size="sm"
+                                    className="size-8 p-0 text-xs shadow-sm"
+                                    onClick={() => setCurrentPage(p)}
+                                >
+                                    {p}
+                                </Button>
+                            ))}
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="size-8"
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                        >
                             <ChevronRight className="size-4" />
                         </Button>
                     </div>
@@ -249,7 +332,7 @@ export default function ManajemenPegawaiPage() {
                     <CardContent className="p-6 flex items-center justify-between">
                         <div className="flex flex-col gap-1">
                             <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">Total Pegawai</span>
-                            <span className="text-2xl font-bold">24 <span className="text-sm font-semibold text-muted-foreground">Orang</span></span>
+                            <span className="text-2xl font-bold">{totalData} <span className="text-sm font-semibold text-muted-foreground">Orang</span></span>
                         </div>
                         <div className="size-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
                             <Users className="size-6" />
@@ -287,7 +370,7 @@ export default function ManajemenPegawaiPage() {
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={handleConfirmDelete}
-                itemName={selectedPegawai}
+                itemName={selectedPegawai?.nama || ""}
             />
 
             {/* Modal Form Tambah/Edit Pegawai */}

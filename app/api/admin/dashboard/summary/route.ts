@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import axios from 'axios';
 
 // Backend Go URL (you should ideally put this in .env.local as NEXT_PUBLIC_API_URL or similar)
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export async function GET() {
     try {

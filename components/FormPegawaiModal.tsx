@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-
 import {
     Dialog,
     DialogContent,
@@ -20,12 +19,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { getJabatans, Jabatan } from "@/lib/api/employees"
 
 export interface PegawaiData {
     id?: number
     nip: string
     nama: string
-    jabatan: string
+    jabatan?: string
+    jabatan_id?: number
     role: string
     status: string
 }
@@ -33,17 +34,17 @@ export interface PegawaiData {
 interface FormPegawaiModalProps {
     isOpen: boolean
     onClose: () => void
-    onSave: (data: PegawaiData | Omit<PegawaiData, 'id'>) => void
+    onSave: (data: any) => void
     pegawaiData: PegawaiData | null
 }
 
 const DEFAULT_FORM_DATA = {
     nip: "",
     nama: "",
-    jabatan: "",
+    jabatan_id: "",
     role: "",
-    status: "",
-    password: "" // password only collected internally
+    status: "Aktif",
+    password: ""
 }
 
 export function FormPegawaiModal({
@@ -53,8 +54,30 @@ export function FormPegawaiModal({
     pegawaiData,
 }: FormPegawaiModalProps) {
     const isEditMode = !!pegawaiData
-
     const [formData, setFormData] = React.useState(DEFAULT_FORM_DATA)
+    const [jabatans, setJabatans] = React.useState<Jabatan[]>([])
+    const [loadingJabatans, setLoadingJabatans] = React.useState(false)
+
+    // Fetch jabatans on mount
+    React.useEffect(() => {
+        const fetchJabatans = async () => {
+            setLoadingJabatans(true)
+            try {
+                const response = await getJabatans()
+                if (response.success) {
+                    setJabatans(response.data)
+                }
+            } catch (error) {
+                console.error("Error fetching jabatans:", error)
+            } finally {
+                setLoadingJabatans(false)
+            }
+        }
+
+        if (isOpen) {
+            fetchJabatans()
+        }
+    }, [isOpen])
 
     // Populate data when modal opens in edit mode
     React.useEffect(() => {
@@ -63,10 +86,10 @@ export function FormPegawaiModal({
                 setFormData({
                     nip: pegawaiData.nip,
                     nama: pegawaiData.nama,
-                    jabatan: pegawaiData.jabatan,
-                    role: pegawaiData.role,
-                    status: pegawaiData.status,
-                    password: "", // always empty on edit initially
+                    jabatan_id: pegawaiData.jabatan_id?.toString() || "",
+                    role: pegawaiData.role.toLowerCase(),
+                    status: pegawaiData.status || "Aktif",
+                    password: "",
                 })
             } else {
                 setFormData(DEFAULT_FORM_DATA)
@@ -80,15 +103,11 @@ export function FormPegawaiModal({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-
-        // In a real app, you would include logic here to pass the password 
-        // to your backend if it was provided, or strip it if empty during edit.
-        const dataToSave = { ...formData }
-        if (isEditMode && pegawaiData?.id) {
-            onSave({ id: pegawaiData.id, ...dataToSave })
-        } else {
-            onSave(dataToSave)
+        const dataToSave = {
+            ...formData,
+            id: pegawaiData?.id
         }
+        onSave(dataToSave)
     }
 
     return (
@@ -133,13 +152,22 @@ export function FormPegawaiModal({
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="jabatan">Jabatan</Label>
-                                <Input
-                                    id="jabatan"
-                                    placeholder="Misal: Kasi Pemerintahan"
-                                    value={formData.jabatan}
-                                    onChange={(e) => handleInputChange("jabatan", e.target.value)}
+                                <Select
+                                    value={formData.jabatan_id}
+                                    onValueChange={(val) => handleInputChange("jabatan_id", val)}
                                     required
-                                />
+                                >
+                                    <SelectTrigger id="jabatan">
+                                        <SelectValue placeholder={loadingJabatans ? "Memuat..." : "Pilih Jabatan"} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {jabatans.map((j) => (
+                                            <SelectItem key={j.id} value={j.id.toString()}>
+                                                {j.nama}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="role">Role Akses</Label>
@@ -152,10 +180,10 @@ export function FormPegawaiModal({
                                         <SelectValue placeholder="Pilih Role" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="Lurah">Lurah</SelectItem>
-                                        <SelectItem value="Admin">Admin</SelectItem>
-                                        <SelectItem value="Sekretaris">Sekretaris</SelectItem>
-                                        <SelectItem value="Pegawai">Pegawai</SelectItem>
+                                        <SelectItem value="lurah">Lurah</SelectItem>
+                                        <SelectItem value="sekertaris">Sekretaris</SelectItem>
+                                        <SelectItem value="kasi">Kasi</SelectItem>
+                                        <SelectItem value="staf">Staf</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
