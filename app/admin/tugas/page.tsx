@@ -1,24 +1,19 @@
 "use client"
 
 import * as React from "react"
+import { format } from "date-fns"
 import {
-    Search,
     Plus,
     Pencil,
     Eye,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    Trash2,
+    FileText,
+    ExternalLink
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
 import {
     Table,
     TableBody,
@@ -28,88 +23,117 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { FormTugasModal, TugasData } from "@/components/FormTugasModal"
-
-// Dummy data
-const tugasData = [
-    {
-        id: 1,
-        namaTugas: "Audit Tahunan Divisi IT",
-        project: "Project: Infrastruktur 2026",
-        prioritas: "HIGH",
-        penanggungJawab: "Budi Santoso",
-        foto: "BS",
-        deadline: "12 Okt 2026",
-        status: "Sedang Dikerjakan"
-    },
-    {
-        id: 2,
-        namaTugas: "Desain UI/UX Dashboard Admin",
-        project: "Project: SIOPIK V2",
-        prioritas: "MEDIUM",
-        penanggungJawab: "Siti Aminah",
-        foto: "SA",
-        deadline: "15 Okt 2026",
-        status: "Selesai"
-    },
-    {
-        id: 3,
-        namaTugas: "Migrasi Database Pelanggan",
-        project: "Project: Cloud Migration",
-        prioritas: "HIGH",
-        penanggungJawab: "Ahmad Riyadi",
-        foto: "AR",
-        deadline: "20 Okt 2026",
-        status: "Belum Dimulai"
-    },
-    {
-        id: 4,
-        namaTugas: "Penyusunan Laporan Kuartal 3",
-        project: "Project: Finance & Reporting",
-        prioritas: "LOW",
-        penanggungJawab: "Dewi Lestari",
-        foto: "DL",
-        deadline: "25 Okt 2026",
-        status: "Sedang Dikerjakan"
-    }
-]
+import { getTasks, createTask, updateTask, deleteTask, Task } from "@/lib/api/tasks"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export default function PemantauanTugasPage() {
-    const [search, setSearch] = React.useState("")
-    const [status, setStatus] = React.useState("semua")
-    const [prioritas, setPrioritas] = React.useState("semua")
+    const [tasks, setTasks] = React.useState<Task[]>([])
+    const [loading, setLoading] = React.useState(true)
+    const [error, setError] = React.useState<string | null>(null)
 
     // Modal State
     const [isFormModalOpen, setIsFormModalOpen] = React.useState(false)
     const [formModeData, setFormModeData] = React.useState<TugasData | null>(null)
 
+    // Delete Confirmation State
+    const [deleteId, setDeleteId] = React.useState<number | null>(null)
+    const [isDeleting, setIsDeleting] = React.useState(false)
+
+    const fetchTasks = React.useCallback(async () => {
+        setLoading(true)
+        setError(null)
+        try {
+            const response = await getTasks()
+            if (response.success) {
+                setTasks(response.data)
+            } else {
+                setError(response.message || "Gagal mengambil data tugas")
+            }
+        } catch (err) {
+            console.error("Error fetching tasks:", err)
+            setError("Terjadi kesalahan saat menghubungi server")
+        } finally {
+            setLoading(false)
+        }
+    }, [])
+
+    React.useEffect(() => {
+        fetchTasks()
+    }, [fetchTasks])
+
     const handleAddTugasClick = () => {
-        setFormModeData(null) // mode Tambah
+        setFormModeData(null)
         setIsFormModalOpen(true)
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleEditTugasClick = (item: any) => {
+    const handleEditTugasClick = (item: Task) => {
         setFormModeData({
             id: item.id,
-            namaTugas: item.namaTugas,
-            project: item.project,
-            deskripsi: "Deskripsi dummy untuk " + item.namaTugas, // missing from table data, mocked
-            penanggungJawab: item.penanggungJawab,
-            prioritas: item.prioritas,
+            judul_tugas: item.judul_tugas,
+            deskripsi: item.deskripsi,
             deadline: item.deadline,
-            status: item.status
+            assignees: item.assignees,
+            file_bukti: item.file_bukti
         })
         setIsFormModalOpen(true)
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleSaveTugas = (data: any) => {
-        console.log("Menyimpan data tugas:", data)
-        setIsFormModalOpen(false)
+    const handleSaveTugas = async (formData: FormData) => {
+        try {
+            if (formModeData?.id) {
+                await updateTask(formModeData.id, formData)
+            } else {
+                await createTask(formData)
+            }
+            fetchTasks()
+        } catch (err) {
+            console.error("Error saving task:", err)
+            alert("Gagal menyimpan tugas")
+        }
+    }
+
+    const handleDeleteClick = (id: number) => {
+        setDeleteId(id)
+    }
+
+    const confirmDelete = async () => {
+        if (!deleteId) return
+        setIsDeleting(true)
+        try {
+            const response = await deleteTask(deleteId)
+            if (response.success) {
+                fetchTasks()
+            } else {
+                alert(response.message)
+            }
+        } catch (err) {
+            console.error("Error deleting task:", err)
+            alert("Gagal menghapus tugas")
+        } finally {
+            setIsDeleting(false)
+            setDeleteId(null)
+        }
+    }
+
+    const handleViewFile = (filePath: string) => {
+        // Adjust based on how your backend serves files
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+        // If server serves with /api prefix as seen in main.go
+        const fullUrl = `${baseUrl}/${filePath.replace(/^\//, '')}`
+        window.open(fullUrl, '_blank')
     }
 
     return (
@@ -131,72 +155,6 @@ export default function PemantauanTugasPage() {
                 </Button>
             </div>
 
-            {/* Card Filter Pencarian */}
-            <Card className="shadow-sm border-muted-foreground/10 overflow-hidden">
-                <CardContent className="p-4 sm:p-6">
-                    <div className="flex flex-col xl:flex-row gap-4 items-end">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-                            {/* Kolom 1 (Cari Tugas) */}
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                    Cari Tugas
-                                </label>
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                                    <Input
-                                        placeholder="Masukkan nama tugas..."
-                                        className="pl-9 h-10 w-full"
-                                        value={search}
-                                        onChange={(e) => setSearch(e.target.value)}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Kolom 2 (Status) */}
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                    Status
-                                </label>
-                                <Select value={status} onValueChange={setStatus}>
-                                    <SelectTrigger className="h-10 w-full">
-                                        <SelectValue placeholder="Semua Status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="semua">Semua Status</SelectItem>
-                                        <SelectItem value="Sedang Dikerjakan">Sedang Dikerjakan</SelectItem>
-                                        <SelectItem value="Selesai">Selesai</SelectItem>
-                                        <SelectItem value="Belum Dimulai">Belum Dimulai</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* Kolom 3 (Prioritas) */}
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                    Prioritas
-                                </label>
-                                <Select value={prioritas} onValueChange={setPrioritas}>
-                                    <SelectTrigger className="h-10 w-full">
-                                        <SelectValue placeholder="Semua Prioritas" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="semua">Semua Prioritas</SelectItem>
-                                        <SelectItem value="HIGH">HIGH</SelectItem>
-                                        <SelectItem value="MEDIUM">MEDIUM</SelectItem>
-                                        <SelectItem value="LOW">LOW</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
-                        {/* Tombol Terapkan */}
-                        <Button className="w-full xl:w-auto h-10 px-8 bg-slate-800 hover:bg-slate-900 text-white shrink-0 mt-4 xl:mt-0">
-                            Terapkan
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
-
             {/* Card Tabel Data Tugas */}
             <Card className="shadow-sm border-muted-foreground/10 overflow-hidden">
                 <div className="overflow-x-auto">
@@ -204,100 +162,127 @@ export default function PemantauanTugasPage() {
                         <TableHeader className="bg-muted/50">
                             <TableRow>
                                 <TableHead className="w-12 text-center">NO</TableHead>
-                                <TableHead className="min-w-[250px]">NAMA TUGAS</TableHead>
-                                <TableHead className="min-w-[120px] text-center">PRIORITAS</TableHead>
+                                <TableHead className="min-w-[250px]">JUDUL TUGAS</TableHead>
                                 <TableHead className="min-w-[200px]">PENANGGUNG JAWAB</TableHead>
                                 <TableHead className="min-w-[140px]">DEADLINE</TableHead>
-                                <TableHead className="min-w-[160px]">STATUS</TableHead>
-                                <TableHead className="text-right min-w-[100px]">AKSI</TableHead>
+                                <TableHead className="min-w-[140px] text-center">FILE</TableHead>
+                                <TableHead className="text-right min-w-[120px]">AKSI</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {tugasData.map((item, index) => (
-                                <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
-                                    <TableCell className="text-center font-medium">
-                                        {index + 1}
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-sm text-foreground">
-                                                {item.namaTugas}
-                                            </span>
-                                            <span className="text-xs text-muted-foreground">
-                                                {item.project}
-                                            </span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        <Badge
-                                            className={cn(
-                                                "px-2.5 py-0.5 text-[11px] font-bold rounded-full border-transparent tracking-wide w-fit mx-auto",
-                                                item.prioritas === "HIGH" && "bg-rose-100 text-rose-700 hover:bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400",
-                                                item.prioritas === "MEDIUM" && "bg-amber-100 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400",
-                                                item.prioritas === "LOW" && "bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400"
-                                            )}
-                                        >
-                                            {item.prioritas}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-3">
-                                            <Avatar className="size-8 border shadow-sm">
-                                                <AvatarImage src={`/avatars/${item.id}.png`} alt={item.penanggungJawab} />
-                                                <AvatarFallback className="bg-primary/5 text-primary text-xs font-semibold">
-                                                    {item.foto}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <span className="text-sm font-semibold">
-                                                {item.penanggungJawab}
-                                            </span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-sm font-medium">
-                                        {item.deadline}
-                                    </TableCell>
-                                    <TableCell>
-                                        <span className={cn(
-                                            "text-sm font-medium",
-                                            item.status === "Sedang Dikerjakan" && "text-blue-600 dark:text-blue-400",
-                                            item.status === "Selesai" && "text-emerald-600 dark:text-emerald-400",
-                                            item.status === "Belum Dimulai" && "text-muted-foreground"
-                                        )}>
-                                            {item.status}
-                                        </span>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex items-center justify-end gap-1">
-                                            <Button variant="ghost" size="icon" className="size-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                                                <Eye className="size-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="size-8 text-muted-foreground hover:text-slate-800 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-800"
-                                                onClick={() => handleEditTugasClick(item)}
-                                            >
-                                                <Pencil className="size-4" />
-                                            </Button>
-                                        </div>
+                            {loading ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                                        Memuat data tugas...
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            ) : error ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="h-24 text-center text-red-500">
+                                        {error}
+                                    </TableCell>
+                                </TableRow>
+                            ) : tasks.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                                        Belum ada tugas organisasi.
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                tasks.map((item, index) => (
+                                    <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
+                                        <TableCell className="text-center font-medium">
+                                            {index + 1}
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-sm text-foreground">
+                                                    {item.judul_tugas}
+                                                </span>
+                                                <p className="text-xs text-muted-foreground line-clamp-1">
+                                                    {item.deskripsi || "Tidak ada deskripsi"}
+                                                </p>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex -space-x-3 overflow-hidden">
+                                                {item.assignees?.slice(0, 3).map((assignee) => (
+                                                    <Avatar key={assignee.id} className="size-8 border-2 border-background shadow-sm hover:z-10 transition-all">
+                                                        <AvatarImage src={assignee.foto_path || ''} alt={assignee.nama} />
+                                                        <AvatarFallback className="bg-blue-100 text-blue-600 text-[10px] font-bold">
+                                                            {assignee.nama.substring(0, 2).toUpperCase()}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                ))}
+                                                {item.assignees && item.assignees.length > 3 && (
+                                                    <div className="flex items-center justify-center size-8 rounded-full border-2 border-background bg-slate-100 text-[10px] font-bold text-slate-600 z-0">
+                                                        +{item.assignees.length - 3}
+                                                    </div>
+                                                )}
+                                                {(!item.assignees || item.assignees.length === 0) && (
+                                                    <span className="text-xs text-muted-foreground">Belum di-assign</span>
+                                                )}
+                                            </div>
+                                            {item.assignees && item.assignees.length > 0 && (
+                                                <p className="text-[10px] mt-1 text-muted-foreground font-medium">
+                                                    {item.assignees[0].nama} {item.assignees.length > 1 ? `& ${item.assignees.length - 1} lainnya` : ''}
+                                                </p>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-sm font-medium">
+                                            {item.deadline ? format(new Date(item.deadline), "dd MMM yyyy, HH:mm") : "-"}
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            {item.file_bukti ? (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 gap-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                                    onClick={() => handleViewFile(item.file_bukti!)}
+                                                >
+                                                    <FileText className="size-4" />
+                                                    <span className="text-xs font-semibold">Tinjau</span>
+                                                </Button>
+                                            ) : (
+                                                <span className="text-xs text-muted-foreground">-</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex items-center justify-end gap-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="size-8 text-muted-foreground hover:text-blue-600 hover:bg-blue-50"
+                                                    onClick={() => handleEditTugasClick(item)}
+                                                >
+                                                    <Pencil className="size-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="size-8 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+                                                    onClick={() => handleDeleteClick(item.id)}
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </div>
                 <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t gap-4">
                     <p className="text-xs text-muted-foreground order-2 sm:order-1">
-                        Menampilkan <span className="font-medium text-foreground">1-4</span> dari <span className="font-medium text-foreground">24</span> tugas
+                        Menampilkan <span className="font-medium text-foreground">{tasks.length}</span> tugas organisasi
                     </p>
                     <div className="flex items-center gap-1 order-1 sm:order-2">
-                        <Button variant="outline" size="icon" className="size-8">
+                        <Button variant="outline" size="icon" className="size-8" disabled>
                             <ChevronLeft className="size-4" />
                         </Button>
                         <Button variant="default" size="sm" className="size-8 p-0 text-xs shadow-sm">1</Button>
-                        <Button variant="outline" size="sm" className="size-8 p-0 text-xs">2</Button>
-                        <Button variant="outline" size="sm" className="size-8 p-0 text-xs">3</Button>
-                        <Button variant="outline" size="icon" className="size-8">
+                        <Button variant="outline" size="icon" className="size-8" disabled>
                             <ChevronRight className="size-4" />
                         </Button>
                     </div>
@@ -311,6 +296,28 @@ export default function PemantauanTugasPage() {
                 tugasData={formModeData}
                 onSave={handleSaveTugas}
             />
+
+            {/* Alert Dialog Hapus */}
+            <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Hapus Tugas?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Tindakan ini tidak dapat dibatalkan. Tugas ini akan dihapus secara permanen dari server.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Batal</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmDelete}
+                            className="bg-red-600 hover:bg-red-700"
+                            disabled={isDeleting}
+                        >
+                            {isDeleting ? "Menghapus..." : "Hapus Tugas"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, X, Upload, FileText } from "lucide-react"
 
 import {
     Dialog,
@@ -29,32 +29,28 @@ import {
 } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge"
+import { getEmployees, Employee } from "@/lib/api/employees"
 
 export interface TugasData {
     id?: number
-    namaTugas: string
-    project: string // or projectName
+    judul_tugas: string
     deskripsi: string
-    penanggungJawab: string
-    prioritas: string
-    deadline: string // can be formatted string or ISO
-    status: string
+    file_bukti?: string | null
+    deadline: string | null
+    assignees?: Employee[]
 }
 
 interface FormTugasModalProps {
     isOpen: boolean
     onClose: () => void
-    onSave: (data: TugasData | Omit<TugasData, 'id'>) => void
+    onSave: (formData: FormData) => Promise<void>
     tugasData: TugasData | null
 }
 
 const DEFAULT_FORM_DATA = {
-    namaTugas: "",
-    project: "",
+    judul_tugas: "",
     deskripsi: "",
-    penanggungJawab: "",
-    prioritas: "",
-    status: "Belum Dimulai",
 }
 
 export function FormTugasModal({
@@ -65,39 +61,59 @@ export function FormTugasModal({
 }: FormTugasModalProps) {
     const isEditMode = !!tugasData
 
-    // Base text fields
     const [formData, setFormData] = React.useState(DEFAULT_FORM_DATA)
-
-    // Custom states for dates
     const [deadlineDate, setDeadlineDate] = React.useState<Date | undefined>(undefined)
+    const [selectedUserIds, setSelectedUserIds] = React.useState<number[]>([])
+    const [employees, setEmployees] = React.useState<Employee[]>([])
+    const [loadingEmployees, setLoadingEmployees] = React.useState(false)
+    const [selectedFile, setSelectedFile] = React.useState<File | null>(null)
+    const [isSubmitting, setIsSubmitting] = React.useState(false)
+
+    // Fetch employees for assignment
+    React.useEffect(() => {
+        if (isOpen) {
+            const fetchEmployees = async () => {
+                setLoadingEmployees(true)
+                try {
+                    const response = await getEmployees({ limit: 100 })
+                    if (response.success) {
+                        setEmployees(response.data.list)
+                    }
+                } catch (error) {
+                    console.error("Error fetching employees:", error)
+                } finally {
+                    setLoadingEmployees(false)
+                }
+            }
+            fetchEmployees()
+        }
+    }, [isOpen])
 
     // Populate data when modal opens in edit mode
     React.useEffect(() => {
         if (isOpen) {
             if (tugasData) {
                 setFormData({
-                    namaTugas: tugasData.namaTugas || "",
-                    project: tugasData.project || "",
+                    judul_tugas: tugasData.judul_tugas || "",
                     deskripsi: tugasData.deskripsi || "",
-                    penanggungJawab: tugasData.penanggungJawab || "",
-                    prioritas: tugasData.prioritas || "",
-                    status: tugasData.status || "Belum Dimulai",
                 })
 
-                // Very basic string to Date parsing for the dummy format "12 Okt 2026"
-                // In a real app, `tugasData.deadline` should ideally be an ISO string or Date object.
                 if (tugasData.deadline) {
-                    // Because our dummy data is localized string ("12 Okt 2026"), creating a Date from it 
-                    // directly might fail depending on the browser. For safety in this demo, let's just 
-                    // set it to today if it exists, or write a custom parser if needed.
-                    // Using a simple fallback for demo purposes:
-                    setDeadlineDate(new Date())
+                    setDeadlineDate(new Date(tugasData.deadline))
                 } else {
                     setDeadlineDate(undefined)
+                }
+
+                if (tugasData.assignees) {
+                    setSelectedUserIds(tugasData.assignees.map(a => a.id))
+                } else {
+                    setSelectedUserIds([])
                 }
             } else {
                 setFormData(DEFAULT_FORM_DATA)
                 setDeadlineDate(undefined)
+                setSelectedUserIds([])
+                setSelectedFile(null)
             }
         }
     }, [isOpen, tugasData])
@@ -106,25 +122,48 @@ export function FormTugasModal({
         setFormData((prev) => ({ ...prev, [field]: value }))
     }
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const toggleUserSelection = (userId: number) => {
+        setSelectedUserIds((prev) =>
+            prev.includes(userId)
+                ? prev.filter((id) => id !== userId)
+                : [...prev, userId]
+        )
+    }
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setSelectedFile(e.target.files[0])
+        }
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        setIsSubmitting(true)
 
-        // Format date nicely before saving
-        let formattedDeadline = ""
-        if (deadlineDate) {
-            // Fallback or use proper locale if needed. Using date-fns format.
-            formattedDeadline = format(deadlineDate, "dd MMM yyyy")
-        }
+        try {
+            const data = new FormData()
+            data.append('judul_tugas', formData.judul_tugas)
+            data.append('deskripsi', formData.deskripsi)
 
-        const dataToSave = {
-            ...formData,
-            deadline: formattedDeadline
-        }
+            if (deadlineDate) {
+                // Backend expects YYYY-MM-DD HH:mm:ss
+                data.append('deadline', format(deadlineDate, "yyyy-MM-dd HH:mm:ss"))
+            }
 
-        if (isEditMode && tugasData?.id) {
-            onSave({ id: tugasData.id, ...dataToSave })
-        } else {
-            onSave(dataToSave)
+            selectedUserIds.forEach((id) => {
+                data.append('target_user_ids', id.toString())
+            })
+
+            if (selectedFile) {
+                data.append('file_bukti', selectedFile)
+            }
+
+            await onSave(data)
+            onClose()
+        } catch (error) {
+            console.error("Error saving task:", error)
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -138,85 +177,76 @@ export function FormTugasModal({
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit}>
-                    <div className="grid gap-4 py-4">
-                        {/* Baris 1: Nama Tugas & Project */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="namaTugas">Nama Tugas <span className="text-red-500">*</span></Label>
-                                <Input
-                                    id="namaTugas"
-                                    placeholder="Masukkan nama tugas"
-                                    value={formData.namaTugas}
-                                    onChange={(e) => handleInputChange("namaTugas", e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="project">Nama Project <span className="text-muted-foreground font-normal">(Opsional)</span></Label>
-                                <Input
-                                    id="project"
-                                    placeholder="Misal: Infrastruktur 2026"
-                                    value={formData.project}
-                                    onChange={(e) => handleInputChange("project", e.target.value)}
-                                />
-                            </div>
+                    <div className="grid gap-6 py-4">
+                        {/* Judul Tugas */}
+                        <div className="space-y-2">
+                            <Label htmlFor="judul_tugas">Judul Tugas <span className="text-red-500">*</span></Label>
+                            <Input
+                                id="judul_tugas"
+                                placeholder="Masukkan judul tugas"
+                                value={formData.judul_tugas}
+                                onChange={(e) => handleInputChange("judul_tugas", e.target.value)}
+                                required
+                            />
                         </div>
 
-                        {/* Baris 2: Deskripsi */}
+                        {/* Deskripsi */}
                         <div className="space-y-2">
                             <Label htmlFor="deskripsi">Deskripsi Detail Tugas</Label>
                             <Textarea
                                 id="deskripsi"
                                 placeholder="Jelaskan detail tugas yang harus diselesaikan..."
-                                className="min-h-[80px]"
-                                rows={3}
+                                className="min-h-[100px]"
+                                rows={4}
                                 value={formData.deskripsi}
                                 onChange={(e) => handleInputChange("deskripsi", e.target.value)}
                             />
                         </div>
 
-                        {/* Baris 3: Penanggung Jawab & Prioritas */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="penanggungJawab">Penanggung Jawab <span className="text-red-500">*</span></Label>
-                                <Select
-                                    value={formData.penanggungJawab}
-                                    onValueChange={(val) => handleInputChange("penanggungJawab", val)}
-                                    required
-                                >
-                                    <SelectTrigger id="penanggungJawab">
-                                        <SelectValue placeholder="Pilih Pegawai" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {/* Dummy list for demo */}
-                                        <SelectItem value="Budi Santoso">Budi Santoso</SelectItem>
-                                        <SelectItem value="Siti Aminah">Siti Aminah</SelectItem>
-                                        <SelectItem value="Ahmad Riyadi">Ahmad Riyadi</SelectItem>
-                                        <SelectItem value="Dewi Lestari">Dewi Lestari</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                        {/* Assignees (Multi-select style) */}
+                        <div className="space-y-3">
+                            <Label>Pilih Penanggung Jawab <span className="text-red-500">*</span></Label>
+                            <div className="flex flex-wrap gap-2 mb-2">
+                                {selectedUserIds.map((id) => {
+                                    const user = employees.find((u) => u.id === id)
+                                    return (
+                                        <Badge key={id} variant="secondary" className="flex items-center gap-1 py-1 px-2 pr-1">
+                                            {user?.nama || `User #${id}`}
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleUserSelection(id)}
+                                                className="hover:bg-muted rounded-full p-0.5"
+                                            >
+                                                <X className="size-3" />
+                                            </button>
+                                        </Badge>
+                                    )
+                                })}
+                                {selectedUserIds.length === 0 && (
+                                    <span className="text-xs text-muted-foreground italic">Belum ada pegawai dipilih</span>
+                                )}
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="prioritas">Prioritas <span className="text-red-500">*</span></Label>
-                                <Select
-                                    value={formData.prioritas}
-                                    onValueChange={(val) => handleInputChange("prioritas", val)}
-                                    required
-                                >
-                                    <SelectTrigger id="prioritas">
-                                        <SelectValue placeholder="Pilih Prioritas" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="HIGH">HIGH</SelectItem>
-                                        <SelectItem value="MEDIUM">MEDIUM</SelectItem>
-                                        <SelectItem value="LOW">LOW</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                            <Select onValueChange={(val) => toggleUserSelection(parseInt(val))}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={loadingEmployees ? "Memuat pegawai..." : "Tambah Pegawai..."} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {employees
+                                        .filter((u) => !selectedUserIds.includes(u.id))
+                                        .map((user) => (
+                                            <SelectItem key={user.id} value={user.id.toString()}>
+                                                {user.nama} ({user.nip})
+                                            </SelectItem>
+                                        ))}
+                                    {employees.length === 0 && !loadingEmployees && (
+                                        <div className="p-2 text-center text-xs text-muted-foreground">Tidak ada pegawai tersedia</div>
+                                    )}
+                                </SelectContent>
+                            </Select>
                         </div>
 
-                        {/* Baris 4: Deadline & Status */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Deadline & File Bukti */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2 flex flex-col">
                                 <Label>Tenggat Waktu (Deadline) <span className="text-red-500">*</span></Label>
                                 <Popover>
@@ -242,32 +272,67 @@ export function FormTugasModal({
                                     </PopoverContent>
                                 </Popover>
                             </div>
+
                             <div className="space-y-2">
-                                <Label htmlFor="status">Status Tugas <span className="text-red-500">*</span></Label>
-                                <Select
-                                    value={formData.status}
-                                    onValueChange={(val) => handleInputChange("status", val)}
-                                    required
-                                >
-                                    <SelectTrigger id="status">
-                                        <SelectValue placeholder="Pilih Status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Belum Dimulai">Belum Dimulai</SelectItem>
-                                        <SelectItem value="Sedang Dikerjakan">Sedang Dikerjakan</SelectItem>
-                                        <SelectItem value="Selesai">Selesai</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <Label htmlFor="file_bukti">File Pendukung</Label>
+                                <div className="flex items-center gap-2">
+                                    <div className="relative flex-1">
+                                        <Input
+                                            id="file_bukti"
+                                            type="file"
+                                            className="hidden"
+                                            onChange={handleFileChange}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="w-full justify-start gap-2 text-muted-foreground truncate"
+                                            onClick={() => document.getElementById('file_bukti')?.click()}
+                                        >
+                                            {selectedFile ? (
+                                                <>
+                                                    <FileText className="size-4 text-blue-500" />
+                                                    <span className="text-foreground truncate">{selectedFile.name}</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Upload className="size-4" />
+                                                    <span>Pilih File</span>
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
+                                    {selectedFile && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => setSelectedFile(null)}
+                                            className="shrink-0 text-red-500"
+                                        >
+                                            <X className="size-4" />
+                                        </Button>
+                                    )}
+                                </div>
+                                {tugasData?.file_bukti && !selectedFile && (
+                                    <p className="text-[10px] text-muted-foreground italic truncate">
+                                        File saat ini: {tugasData.file_bukti.split('/').pop()}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
 
-                    <DialogFooter className="pt-4 border-t mt-2">
+                    <DialogFooter className="pt-6 border-t mt-4">
                         <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto">
                             Batal
                         </Button>
-                        <Button type="submit" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white">
-                            Simpan Tugas
+                        <Button
+                            type="submit"
+                            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+                            disabled={isSubmitting || loadingEmployees || selectedUserIds.length === 0 || !formData.judul_tugas}
+                        >
+                            {isSubmitting ? "Menyimpan..." : "Simpan Tugas"}
                         </Button>
                     </DialogFooter>
                 </form>
