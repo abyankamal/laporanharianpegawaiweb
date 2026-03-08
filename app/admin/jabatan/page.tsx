@@ -19,6 +19,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Card, CardContent } from "@/components/ui/card"
+import { CustomPagination } from "@/components/CustomPagination"
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal"
 import { FormJabatanModal } from "@/components/FormJabatanModal"
 
@@ -37,6 +38,11 @@ export default function ManajemenJabatanPage() {
     const [loading, setLoading] = React.useState(true)
     const [jabatans, setJabatans] = React.useState<Jabatan[]>([])
     const [searchTerm, setSearchTerm] = React.useState("")
+    const [currentPage, setCurrentPage] = React.useState(1)
+    const [totalPages, setTotalPages] = React.useState(1)
+    const [totalData, setTotalData] = React.useState(0)
+    const [limit] = React.useState(10)
+
     const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false)
     const [selectedJabatan, setSelectedJabatan] = React.useState<Jabatan | null>(null)
     const [isFormModalOpen, setIsFormModalOpen] = React.useState(false)
@@ -48,6 +54,8 @@ export default function ManajemenJabatanPage() {
             const response = await getJabatans()
             if (response.success) {
                 setJabatans(response.data)
+                setTotalData(response.data.length)
+                setTotalPages(Math.ceil(response.data.length / limit))
             }
         } catch (error) {
             console.error("Error fetching jabatans:", error)
@@ -55,14 +63,25 @@ export default function ManajemenJabatanPage() {
         } finally {
             setLoading(false)
         }
-    }, [toast])
+    }, [limit])
 
     React.useEffect(() => {
         fetchJabatans()
     }, [fetchJabatans])
 
-    const filteredJabatans = jabatans.filter(j =>
-        j.nama.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredJabatans = jabatans
+        .filter(j => j.nama.toLowerCase().includes(searchTerm.toLowerCase()))
+
+    // Update total pages when search term changes
+    React.useEffect(() => {
+        setTotalData(filteredJabatans.length)
+        setTotalPages(Math.ceil(filteredJabatans.length / limit))
+        setCurrentPage(1)
+    }, [searchTerm, jabatans.length, limit])
+
+    const paginatedJabatans = filteredJabatans.slice(
+        (currentPage - 1) * limit,
+        currentPage * limit
     )
 
     const handleAddClick = () => {
@@ -173,10 +192,10 @@ export default function ManajemenJabatanPage() {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                filteredJabatans.map((item, index) => (
+                                paginatedJabatans.map((item, index) => (
                                     <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
                                         <TableCell className="font-medium text-sm text-muted-foreground">
-                                            {index + 1}
+                                            {(currentPage - 1) * limit + index + 1}
                                         </TableCell>
                                         <TableCell className="font-semibold text-sm">
                                             {item.nama}
@@ -207,6 +226,14 @@ export default function ManajemenJabatanPage() {
                         </TableBody>
                     </Table>
                 </div>
+                <CustomPagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    totalData={totalData}
+                    limit={limit}
+                    itemName="jabatan"
+                />
             </Card>
 
             <DeleteConfirmModal

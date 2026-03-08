@@ -27,6 +27,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { format } from "date-fns"
 import { id as localeID } from "date-fns/locale"
 
+import { CustomPagination } from "@/components/CustomPagination"
+
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal"
 import { FormPengumumanModal, PengumumanData } from "@/components/FormPengumumanModal"
 import { getAnnouncements, deleteAnnouncement, Announcement, AnnouncementStatistik } from "@/lib/api/announcements"
@@ -265,31 +267,12 @@ export default function PusatPengumumanPage() {
                     </Table>
                 </div>
 
-                {totalPages > 1 && (
-                    <div className="flex items-center justify-between px-6 py-4 border-t bg-muted/10">
-                        <p className="text-sm text-muted-foreground">
-                            Halaman <span className="font-medium text-foreground">{currentPage}</span> dari <span className="font-medium text-foreground">{totalPages}</span>
-                        </p>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                disabled={currentPage === 1}
-                            >
-                                Sebelumnya
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                disabled={currentPage === totalPages}
-                            >
-                                Selanjutnya
-                            </Button>
-                        </div>
-                    </div>
-                )}
+                <CustomPagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    itemName="pengumuman"
+                />
             </Card>
 
             {/* Bagian Tips */}

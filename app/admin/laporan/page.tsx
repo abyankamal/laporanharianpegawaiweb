@@ -8,8 +8,6 @@ import {
     FileText,
     Filter,
     Search,
-    ChevronLeft,
-    ChevronRight,
     Eye
 } from "lucide-react"
 
@@ -45,6 +43,7 @@ import {
 } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
+import { CustomPagination } from "@/components/CustomPagination"
 
 import { getRekapLaporan, Report, downloadReportsPDF, downloadReportsExcel } from "@/lib/api/reports"
 
@@ -353,46 +352,14 @@ export default function LaporanRekapPage() {
                         </Table>
                     </div>
                 </CardContent>
-                {reports.length > 0 && (
-                    <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t gap-4">
-                        <p className="text-xs text-muted-foreground order-2 sm:order-1">
-                            Menampilkan <span className="font-medium text-foreground">{(currentPage - 1) * limit + 1}-{Math.min(currentPage * limit, totalData)}</span> dari <span className="font-medium text-foreground">{totalData}</span> data
-                        </p>
-                        <div className="flex items-center gap-1 order-1 sm:order-2">
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="size-8"
-                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                disabled={currentPage === 1}
-                            >
-                                <ChevronLeft className="size-4" />
-                            </Button>
-
-                            {[...Array(totalPages)].map((_, i) => (
-                                <Button
-                                    key={i}
-                                    variant={currentPage === i + 1 ? "default" : "outline"}
-                                    size="sm"
-                                    className="size-8 p-0 text-xs"
-                                    onClick={() => setCurrentPage(i + 1)}
-                                >
-                                    {i + 1}
-                                </Button>
-                            ))}
-
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="size-8"
-                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                                disabled={currentPage === totalPages}
-                            >
-                                <ChevronRight className="size-4" />
-                            </Button>
-                        </div>
-                    </div>
-                )}
+                <CustomPagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    totalData={totalData}
+                    limit={limit}
+                    itemName="laporan"
+                />
             </Card>
 
             <DetailLaporanModal

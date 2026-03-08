@@ -18,6 +18,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
+import { CustomPagination } from "@/components/CustomPagination"
 
 import {
     getWorkHour,
@@ -42,6 +43,8 @@ export default function PengaturanPage() {
     // State for Holidays
     const [holidays, setHolidays] = React.useState<Holiday[]>([])
     const [isLoadingHolidays, setIsLoadingHolidays] = React.useState(true)
+    const [currentPage, setCurrentPage] = React.useState(1)
+    const [limit] = React.useState(5) // Smaller limit for settings page
 
     // State for Holiday Modal
     const [isHolidayModalOpen, setIsHolidayModalOpen] = React.useState(false)
@@ -115,6 +118,12 @@ export default function PengaturanPage() {
         fetchSettings()
         setIsHolidayModalOpen(false)
     }
+
+    const totalPages = Math.ceil(holidays.length / limit)
+    const paginatedHolidays = holidays.slice(
+        (currentPage - 1) * limit,
+        currentPage * limit
+    )
 
     return (
         <div className="flex flex-col gap-6 p-1">
@@ -251,10 +260,10 @@ export default function PengaturanPage() {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                holidays.map((item, index) => (
+                                paginatedHolidays.map((item, index) => (
                                     <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
                                         <TableCell className="pl-6 text-center font-medium text-foreground/70">
-                                            {index + 1}
+                                            {(currentPage - 1) * limit + index + 1}
                                         </TableCell>
                                         <TableCell className="font-medium text-foreground/80">
                                             {item.tanggal_mulai === item.tanggal_selesai
@@ -286,6 +295,15 @@ export default function PengaturanPage() {
                         </TableBody>
                     </Table>
                 </div>
+
+                <CustomPagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    totalData={holidays.length}
+                    limit={limit}
+                    itemName="hari libur"
+                />
 
                 <div className="p-4 text-center">
                     <p className="text-xs italic text-muted-foreground">

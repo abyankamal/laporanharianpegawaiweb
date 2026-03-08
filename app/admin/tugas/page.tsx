@@ -13,6 +13,8 @@ import {
     ExternalLink
 } from "lucide-react"
 
+import { CustomPagination } from "@/components/CustomPagination"
+
 import { Button } from "@/components/ui/button"
 import {
     Table,
@@ -44,6 +46,10 @@ export default function PemantauanTugasPage() {
     const [tasks, setTasks] = React.useState<Task[]>([])
     const [loading, setLoading] = React.useState(true)
     const [error, setError] = React.useState<string | null>(null)
+    const [currentPage, setCurrentPage] = React.useState(1)
+    const [totalPages, setTotalPages] = React.useState(1)
+    const [totalData, setTotalData] = React.useState(0)
+    const [limit] = React.useState(10)
 
     // Modal State
     const [isFormModalOpen, setIsFormModalOpen] = React.useState(false)
@@ -144,6 +150,11 @@ export default function PemantauanTugasPage() {
         window.open(fullUrl, '_blank')
     }
 
+    const paginatedTasks = tasks.slice(
+        (currentPage - 1) * limit,
+        currentPage * limit
+    )
+
     return (
         <div className="flex flex-col gap-6 p-1">
             {/* Header Halaman & Tombol Aksi */}
@@ -197,10 +208,10 @@ export default function PemantauanTugasPage() {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                tasks.map((item, index) => (
+                                paginatedTasks.map((item, index) => (
                                     <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
                                         <TableCell className="text-center font-medium">
-                                            {index + 1}
+                                            {(currentPage - 1) * limit + index + 1}
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex flex-col">
@@ -281,20 +292,14 @@ export default function PemantauanTugasPage() {
                         </TableBody>
                     </Table>
                 </div>
-                <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t gap-4">
-                    <p className="text-xs text-muted-foreground order-2 sm:order-1">
-                        Menampilkan <span className="font-medium text-foreground">{tasks.length}</span> tugas organisasi
-                    </p>
-                    <div className="flex items-center gap-1 order-1 sm:order-2">
-                        <Button variant="outline" size="icon" className="size-8" disabled>
-                            <ChevronLeft className="size-4" />
-                        </Button>
-                        <Button variant="default" size="sm" className="size-8 p-0 text-xs shadow-sm">1</Button>
-                        <Button variant="outline" size="icon" className="size-8" disabled>
-                            <ChevronRight className="size-4" />
-                        </Button>
-                    </div>
-                </div>
+                <CustomPagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    totalData={totalData}
+                    limit={limit}
+                    itemName="tugas"
+                />
             </Card>
 
             {/* Modal Form Tambah/Edit Tugas */}

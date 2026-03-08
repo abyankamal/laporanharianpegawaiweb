@@ -13,6 +13,8 @@ import {
     Check
 } from "lucide-react"
 
+import { CustomPagination } from "@/components/CustomPagination"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -297,44 +299,6 @@ export default function ManajemenPegawaiPage() {
                             )}
                         </TableBody>
                     </Table>
-                </div>
-                <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t gap-4">
-                    <p className="text-xs text-muted-foreground order-2 sm:order-1">
-                        Menampilkan <span className="font-medium text-foreground">{employees.length > 0 ? (currentPage - 1) * limit + 1 : 0}</span> sampai <span className="font-medium text-foreground">{Math.min(currentPage * limit, totalData)}</span> dari <span className="font-medium text-foreground">{totalData}</span> entri
-                    </p>
-                    <div className="flex items-center gap-1 order-1 sm:order-2">
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="size-8"
-                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1}
-                        >
-                            <ChevronLeft className="size-4" />
-                        </Button>
-                        <div className="flex items-center gap-1">
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                                <Button
-                                    key={p}
-                                    variant={currentPage === p ? "default" : "outline"}
-                                    size="sm"
-                                    className="size-8 p-0 text-xs shadow-sm"
-                                    onClick={() => setCurrentPage(p)}
-                                >
-                                    {p}
-                                </Button>
-                            ))}
-                        </div>
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="size-8"
-                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages}
-                        >
-                            <ChevronRight className="size-4" />
-                        </Button>
-                    </div>
                 </div>
             </Card>
 
