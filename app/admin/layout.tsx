@@ -33,6 +33,11 @@ import { UserProvider, useUser } from "@/components/UserContext"
 
 function AdminHeader() {
     const { user, logout } = useUser();
+    const [mounted, setMounted] = React.useState(false)
+
+    React.useEffect(() => {
+        setMounted(true)
+    }, [])
 
     return (
         <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-2 border-b bg-background/80 backdrop-blur-md px-4 shadow-sm transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
@@ -60,47 +65,49 @@ function AdminHeader() {
                     <span className="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-destructive ring-2 ring-background"></span>
                 </Button>
 
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-2 ring-transparent transition-all hover:ring-primary/20 focus-visible:ring-primary">
-                            <Avatar className="h-9 w-9 text-xs">
-                                <AvatarImage src={user?.foto_path || "/avatars/admin.png"} alt={user?.nama || "Admin"} />
-                                <AvatarFallback className="bg-primary text-primary-foreground">
-                                    {user?.nama?.substring(0, 2).toUpperCase() || "AD"}
-                                </AvatarFallback>
-                            </Avatar>
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56" align="end" forceMount>
-                        <DropdownMenuLabel className="font-normal">
-                            <div className="flex flex-col space-y-1">
-                                <p className="text-sm font-medium leading-none">{user?.nama || "Admin Sukanegla"}</p>
-                                <p className="text-xs leading-none text-muted-foreground">
-                                    {user?.nip || "admin@sukanegla.desa.id"}
-                                </p>
-                            </div>
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuGroup>
-                            <DropdownMenuItem>
-                                <User className="mr-2 h-4 w-4" />
-                                <span>Profil</span>
+                {mounted && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-2 ring-transparent transition-all hover:ring-primary/20 focus-visible:ring-primary">
+                                <Avatar className="h-9 w-9 text-xs">
+                                    <AvatarImage src={user?.foto_path || "/avatars/admin.png"} alt={user?.nama || "Admin"} />
+                                    <AvatarFallback className="bg-primary text-primary-foreground">
+                                        {user?.nama?.substring(0, 2).toUpperCase() || "AD"}
+                                    </AvatarFallback>
+                                </Avatar>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56" align="end" forceMount>
+                            <DropdownMenuLabel className="font-normal">
+                                <div className="flex flex-col space-y-1">
+                                    <p className="text-sm font-medium leading-none">{user?.nama || "Admin Sukanegla"}</p>
+                                    <p className="text-xs leading-none text-muted-foreground">
+                                        {user?.nip || "admin@sukanegla.desa.id"}
+                                    </p>
+                                </div>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuGroup>
+                                <DropdownMenuItem>
+                                    <User className="mr-2 h-4 w-4" />
+                                    <span>Profil</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                    <Settings className="mr-2 h-4 w-4" />
+                                    <span>Pengaturan</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                                className="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer"
+                                onClick={() => logout()}
+                            >
+                                <LogOut className="mr-2 h-4 w-4" />
+                                <span>Keluar</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
-                                <Settings className="mr-2 h-4 w-4" />
-                                <span>Pengaturan</span>
-                            </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                            className="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer"
-                            onClick={() => logout()}
-                        >
-                            <LogOut className="mr-2 h-4 w-4" />
-                            <span>Keluar</span>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
             </div>
         </header>
     );

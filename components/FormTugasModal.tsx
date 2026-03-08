@@ -63,11 +63,17 @@ export function FormTugasModal({
 
     const [formData, setFormData] = React.useState(DEFAULT_FORM_DATA)
     const [deadlineDate, setDeadlineDate] = React.useState<Date | undefined>(undefined)
+    const [deadlineTime, setDeadlineTime] = React.useState("08:00")
     const [selectedUserIds, setSelectedUserIds] = React.useState<number[]>([])
     const [employees, setEmployees] = React.useState<Employee[]>([])
     const [loadingEmployees, setLoadingEmployees] = React.useState(false)
     const [selectedFile, setSelectedFile] = React.useState<File | null>(null)
     const [isSubmitting, setIsSubmitting] = React.useState(false)
+    const [mounted, setMounted] = React.useState(false)
+
+    React.useEffect(() => {
+        setMounted(true)
+    }, [])
 
     // Fetch employees for assignment
     React.useEffect(() => {
@@ -99,9 +105,12 @@ export function FormTugasModal({
                 })
 
                 if (tugasData.deadline) {
-                    setDeadlineDate(new Date(tugasData.deadline))
+                    const dateObj = new Date(tugasData.deadline)
+                    setDeadlineDate(dateObj)
+                    setDeadlineTime(format(dateObj, "HH:mm"))
                 } else {
                     setDeadlineDate(undefined)
+                    setDeadlineTime("08:00")
                 }
 
                 if (tugasData.assignees) {
@@ -112,6 +121,7 @@ export function FormTugasModal({
             } else {
                 setFormData(DEFAULT_FORM_DATA)
                 setDeadlineDate(undefined)
+                setDeadlineTime("08:00")
                 setSelectedUserIds([])
                 setSelectedFile(null)
             }
@@ -146,8 +156,13 @@ export function FormTugasModal({
             data.append('deskripsi', formData.deskripsi)
 
             if (deadlineDate) {
+                // Combine date and time
+                const [hours, minutes] = deadlineTime.split(':').map(Number)
+                const finalDeadline = new Date(deadlineDate)
+                finalDeadline.setHours(hours, minutes, 0, 0)
+
                 // Backend expects YYYY-MM-DD HH:mm:ss
-                data.append('deadline', format(deadlineDate, "yyyy-MM-dd HH:mm:ss"))
+                data.append('deadline', format(finalDeadline, "yyyy-MM-dd HH:mm:ss"))
             }
 
             selectedUserIds.forEach((id) => {
@@ -166,6 +181,8 @@ export function FormTugasModal({
             setIsSubmitting(false)
         }
     }
+
+    if (!mounted) return null
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -274,52 +291,63 @@ export function FormTugasModal({
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="file_bukti">File Pendukung</Label>
-                                <div className="flex items-center gap-2">
-                                    <div className="relative flex-1">
-                                        <Input
-                                            id="file_bukti"
-                                            type="file"
-                                            className="hidden"
-                                            onChange={handleFileChange}
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            className="w-full justify-start gap-2 text-muted-foreground truncate"
-                                            onClick={() => document.getElementById('file_bukti')?.click()}
-                                        >
-                                            {selectedFile ? (
-                                                <>
-                                                    <FileText className="size-4 text-blue-500" />
-                                                    <span className="text-foreground truncate">{selectedFile.name}</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Upload className="size-4" />
-                                                    <span>Pilih File</span>
-                                                </>
-                                            )}
-                                        </Button>
-                                    </div>
-                                    {selectedFile && (
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => setSelectedFile(null)}
-                                            className="shrink-0 text-red-500"
-                                        >
-                                            <X className="size-4" />
-                                        </Button>
-                                    )}
+                                <Label htmlFor="deadline_time">Waktu (Jam) <span className="text-red-500">*</span></Label>
+                                <Input
+                                    id="deadline_time"
+                                    type="time"
+                                    value={deadlineTime}
+                                    onChange={(e) => setDeadlineTime(e.target.value)}
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="file_bukti">File Pendukung</Label>
+                            <div className="flex items-center gap-2">
+                                <div className="relative flex-1">
+                                    <Input
+                                        id="file_bukti"
+                                        type="file"
+                                        className="hidden"
+                                        onChange={handleFileChange}
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="w-full justify-start gap-2 text-muted-foreground truncate"
+                                        onClick={() => document.getElementById('file_bukti')?.click()}
+                                    >
+                                        {selectedFile ? (
+                                            <>
+                                                <FileText className="size-4 text-blue-500" />
+                                                <span className="text-foreground truncate">{selectedFile.name}</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Upload className="size-4" />
+                                                <span>Pilih File</span>
+                                            </>
+                                        )}
+                                    </Button>
                                 </div>
-                                {tugasData?.file_bukti && !selectedFile && (
-                                    <p className="text-[10px] text-muted-foreground italic truncate">
-                                        File saat ini: {tugasData.file_bukti.split('/').pop()}
-                                    </p>
+                                {selectedFile && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setSelectedFile(null)}
+                                        className="shrink-0 text-red-500"
+                                    >
+                                        <X className="size-4" />
+                                    </Button>
                                 )}
                             </div>
+                            {tugasData?.file_bukti && !selectedFile && (
+                                <p className="text-[10px] text-muted-foreground italic truncate">
+                                    File saat ini: {tugasData.file_bukti.split('/').pop()}
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -337,6 +365,6 @@ export function FormTugasModal({
                     </DialogFooter>
                 </form>
             </DialogContent>
-        </Dialog>
+        </Dialog >
     )
 }
