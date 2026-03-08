@@ -30,14 +30,32 @@ import {
 import { Button } from "@/components/ui/button"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { UserProvider, useUser } from "@/components/UserContext"
+import { usePathname } from "next/navigation"
 
 function AdminHeader() {
     const { user, logout } = useUser();
+    const pathname = usePathname();
     const [mounted, setMounted] = React.useState(false)
 
     React.useEffect(() => {
         setMounted(true)
     }, [])
+
+    const getPageTitle = (path: string) => {
+        const segments = path.split('/').filter(Boolean);
+        const lastSegment = segments[segments.length - 1];
+
+        switch (lastSegment) {
+            case 'admin': return 'Dashboard';
+            case 'pegawai': return 'Data Pegawai';
+            case 'jabatan': return 'Data Jabatan';
+            case 'tugas': return 'Pemantauan Tugas';
+            case 'pengumuman': return 'Pusat Pengumuman';
+            case 'laporan': return 'Rekap Laporan';
+            case 'pengaturan': return 'Pengaturan';
+            default: return 'Dashboard';
+        }
+    }
 
     return (
         <header className="flex-shrink-0 border-b bg-background/95 backdrop-blur sticky top-0 z-20 flex h-16 items-center justify-between gap-2 px-4 shadow-sm transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
@@ -53,17 +71,13 @@ function AdminHeader() {
                         </BreadcrumbItem>
                         <BreadcrumbSeparator className="hidden md:block" />
                         <BreadcrumbItem>
-                            <BreadcrumbPage>Dashboard</BreadcrumbPage>
+                            <BreadcrumbPage>{getPageTitle(pathname)}</BreadcrumbPage>
                         </BreadcrumbItem>
                     </BreadcrumbList>
                 </Breadcrumb>
             </div>
 
             <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" className="relative hover:bg-muted/50 transition-colors">
-                    <Bell className="size-4" />
-                    <span className="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-destructive ring-2 ring-background"></span>
-                </Button>
 
                 {mounted && (
                     <DropdownMenu>
