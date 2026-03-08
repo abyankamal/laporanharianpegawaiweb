@@ -338,30 +338,6 @@ export default function ManajemenPegawaiPage() {
                 </div>
             </Card>
 
-            {/* Kartu Statistik (Widget Bawah) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-2">
-                <Card className="shadow-sm border-muted-foreground/10">
-                    <CardContent className="p-6 flex items-center justify-between">
-                        <div className="flex flex-col gap-1">
-                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">Total Pegawai</span>
-                            <span className="text-2xl font-bold">{totalData} <span className="text-sm font-semibold text-muted-foreground">Orang</span></span>
-                        </div>
-                        <div className="size-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                            <Users className="size-6" />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="shadow-sm border-muted-foreground/10">
-                    <CardContent className="p-6 flex items-center justify-between">
-                        <div className="flex flex-col gap-1">
-                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">Filter Data</span>
-                            <span className="text-sm text-muted-foreground">Gunakan pencarian untuk memfilter data pegawai.</span>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-
             {/* Integasi Modal Hapus */}
             <DeleteConfirmModal
                 isOpen={isDeleteModalOpen}

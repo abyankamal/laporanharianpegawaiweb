@@ -209,20 +209,6 @@ export default function ManajemenJabatanPage() {
                 </div>
             </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
-                <Card className="shadow-sm border-muted-foreground/10">
-                    <CardContent className="p-6 flex items-center justify-between">
-                        <div className="flex flex-col gap-1">
-                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">Total Jabatan</span>
-                            <span className="text-2xl font-bold">{jabatans.length} <span className="text-sm font-semibold text-muted-foreground">Entri</span></span>
-                        </div>
-                        <div className="size-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                            <Briefcase className="size-6" />
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-
             <DeleteConfirmModal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
