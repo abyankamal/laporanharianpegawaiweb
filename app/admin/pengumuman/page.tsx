@@ -30,6 +30,7 @@ import { id as localeID } from "date-fns/locale"
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal"
 import { FormPengumumanModal, PengumumanData } from "@/components/FormPengumumanModal"
 import { getAnnouncements, deleteAnnouncement, Announcement, AnnouncementStatistik } from "@/lib/api/announcements"
+import { toast } from "sonner"
 
 export default function PusatPengumumanPage() {
     const [search, setSearch] = React.useState("")
@@ -99,6 +100,7 @@ export default function PusatPengumumanPage() {
     }
 
     const handleSavePengumuman = async () => {
+        toast.success(formModeData?.id ? "Pengumuman Diperbarui" : "Pengumuman Berhasil Dibuat")
         fetchAnnouncements()
         setIsFormModalOpen(false)
     }
@@ -116,13 +118,14 @@ export default function PusatPengumumanPage() {
             const id = parseInt(parts[parts.length - 1])
             const response = await deleteAnnouncement(id)
             if (response.success) {
+                toast.success("Pengumuman Dihapus")
                 fetchAnnouncements()
             } else {
-                alert(response.message)
+                toast.error(response.message || "Gagal menghapus pengumuman")
             }
         } catch (err) {
             console.error(err)
-            alert("Gagal menghapus pengumuman")
+            toast.error("Gagal menghapus pengumuman")
         } finally {
             setIsDeleteModalOpen(false)
         }

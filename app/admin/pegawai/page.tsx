@@ -47,14 +47,9 @@ import {
     updateEmployee,
     Employee
 } from "@/lib/api/employees"
-// import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 
 export default function ManajemenPegawaiPage() {
-    // const { toast } = useToast()
-    const toast = React.useCallback(({ title, description }: { title: string, description: string, variant?: string }) => {
-        alert(`${title}: ${description}`)
-    }, [])
-
     const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false)
     const [selectedPegawai, setSelectedPegawai] = React.useState<Employee | null>(null)
     const [loading, setLoading] = React.useState(true)
@@ -100,11 +95,7 @@ export default function ManajemenPegawaiPage() {
             }
         } catch (error) {
             console.error("Error fetching employees:", error)
-            toast({
-                title: "Error",
-                description: "Gagal mengambil data pegawai",
-                variant: "destructive",
-            })
+            toast.error("Gagal mengambil data pegawai")
         } finally {
             setLoading(false)
         }
@@ -150,19 +141,15 @@ export default function ManajemenPegawaiPage() {
 
             if (data.id) {
                 await updateEmployee(data.id, payload)
-                toast({ title: "Sukses", description: "Data pegawai berhasil diperbarui" })
+                toast.success("Data pegawai berhasil diperbarui")
             } else {
                 await createEmployee(payload)
-                toast({ title: "Sukses", description: "Pegawai baru berhasil ditambahkan" })
+                toast.success("Pegawai baru berhasil ditambahkan")
             }
             setIsFormModalOpen(false)
             fetchEmployees()
         } catch (error: any) {
-            toast({
-                title: "Error",
-                description: error.response?.data?.message || "Gagal menyimpan data pegawai",
-                variant: "destructive",
-            })
+            toast.error(error.response?.data?.message || "Gagal menyimpan data pegawai")
         }
     }
 
@@ -175,15 +162,11 @@ export default function ManajemenPegawaiPage() {
         if (!selectedPegawai) return
         try {
             await deleteEmployee(selectedPegawai.id)
-            toast({ title: "Sukses", description: "Data pegawai berhasil dihapus" })
+            toast.success("Data pegawai berhasil dihapus")
             setIsDeleteModalOpen(false)
             fetchEmployees()
         } catch (error) {
-            toast({
-                title: "Error",
-                description: "Gagal menghapus data pegawai",
-                variant: "destructive",
-            })
+            toast.error("Gagal menghapus data pegawai")
         }
     }
 

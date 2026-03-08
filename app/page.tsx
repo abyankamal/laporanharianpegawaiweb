@@ -9,33 +9,44 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { login } from "@/lib/api/auth"
 
+import { toast } from "sonner"
+
 export default function LoginPage() {
   const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [nip, setNip] = useState("")
   const [password, setPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setLoading(true)
     setError(null)
 
     try {
       const res = await login(nip, password)
 
       if (res.status === "success") {
+        toast.success("Login Berhasil", {
+          description: "Selamat datang kembali di Admin Panel SIOPIK"
+        })
         router.push("/admin")
         router.refresh() // Ensure proxy catches the new cookie
       } else {
         setError(res.message || "Kredensial tidak valid")
+        toast.error("Login Gagal", {
+          description: res.message || "Silakan periksa NIP dan password Anda"
+        })
       }
     } catch (err) {
       console.error(err)
-      setError("Gagal menghubungi server. Silakan coba lagi nanti.")
+      setError("Terjadi kesalahan sistem")
+      toast.error("Error", {
+        description: "Terjadi kesalahan saat menghubungi server"
+      })
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
@@ -117,7 +128,7 @@ export default function LoginPage() {
                     onChange={(e) => setNip(e.target.value)}
                     className="pl-10 h-12 bg-white/50 border-white/60 focus:bg-white/80 focus:ring-blue-500/50 shadow-sm backdrop-blur-sm transition-all"
                     required
-                    disabled={isLoading}
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -138,13 +149,13 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-10 h-12 bg-white/50 border-white/60 focus:bg-white/80 focus:ring-blue-500/50 shadow-sm backdrop-blur-sm transition-all"
                     required
-                    disabled={isLoading}
+                    disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
-                    disabled={isLoading}
+                    disabled={loading}
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
@@ -154,10 +165,10 @@ export default function LoginPage() {
               {/* Submit Button */}
               <Button
                 type="submit"
-                disabled={isLoading}
+                disabled={loading}
                 className="w-full h-12 mt-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2"
               >
-                {isLoading ? (
+                {loading ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin" />
                     <span>Memproses...</span>

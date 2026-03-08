@@ -27,6 +27,7 @@ import {
     WorkHour,
     Holiday,
 } from "@/lib/api/settings"
+import { toast } from "sonner"
 
 import { FormHariLiburModal } from "@/components/FormHariLiburModal"
 
@@ -82,13 +83,13 @@ export default function PengaturanPage() {
                 jam_pulang_jumat: jamPulangJumat,
             })
             if (res.status === "success") {
-                alert("Jam kerja berhasil disimpan!")
+                toast.success("Jam kerja berhasil disimpan!")
             } else {
-                alert(res.message || "Gagal menyimpan jam kerja")
+                toast.error(res.message || "Gagal menyimpan jam kerja")
             }
         } catch (error) {
             console.error(error)
-            alert("Terjadi kesalahan saat menyimpan jam kerja")
+            toast.error("Terjadi kesalahan saat menyimpan jam kerja")
         }
     }
 
@@ -98,17 +99,19 @@ export default function PengaturanPage() {
         try {
             const res = await deleteHoliday(id)
             if (res.status === "success") {
+                toast.success("Hari libur berhasil dihapus")
                 fetchSettings()
             } else {
-                alert(res.message || "Gagal menghapus hari libur")
+                toast.error(res.message || "Gagal menghapus hari libur")
             }
         } catch (error) {
             console.error(error)
-            alert("Terjadi kesalahan saat menghapus hari libur")
+            toast.error("Terjadi kesalahan saat menghapus hari libur")
         }
     }
 
     const handleSaveHoliday = async () => {
+        toast.success("Hari libur berhasil ditambahkan")
         fetchSettings()
         setIsHolidayModalOpen(false)
     }

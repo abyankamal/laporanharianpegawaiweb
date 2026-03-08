@@ -38,6 +38,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { toast } from "sonner"
 
 export default function PemantauanTugasPage() {
     const [tasks, setTasks] = React.useState<Task[]>([])
@@ -94,14 +95,20 @@ export default function PemantauanTugasPage() {
     const handleSaveTugas = async (formData: FormData) => {
         try {
             if (formModeData?.id) {
-                await updateTask(formModeData.id, formData)
+                const res = await updateTask(formModeData.id, formData)
+                if (res.success) {
+                    toast.success("Tugas Berhasil Diperbarui")
+                }
             } else {
-                await createTask(formData)
+                const res = await createTask(formData)
+                if (res.success) {
+                    toast.success("Tugas Berhasil Ditambahkan")
+                }
             }
             fetchTasks()
         } catch (err) {
             console.error("Error saving task:", err)
-            alert("Gagal menyimpan tugas")
+            toast.error("Gagal menyimpan tugas")
         }
     }
 
@@ -115,13 +122,14 @@ export default function PemantauanTugasPage() {
         try {
             const response = await deleteTask(deleteId)
             if (response.success) {
+                toast.success("Tugas Berhasil Dihapus")
                 fetchTasks()
             } else {
-                alert(response.message)
+                toast.error(response.message || "Gagal menghapus tugas")
             }
         } catch (err) {
             console.error("Error deleting task:", err)
-            alert("Gagal menghapus tugas")
+            toast.error("Gagal menghapus tugas")
         } finally {
             setIsDeleting(false)
             setDeleteId(null)

@@ -30,10 +30,9 @@ import {
     Jabatan
 } from "@/lib/api/jabatan"
 
+import { toast } from "sonner"
+
 export default function ManajemenJabatanPage() {
-    const toast = React.useCallback(({ title, description }: { title: string, description: string }) => {
-        alert(`${title}: ${description}`)
-    }, [])
 
     const [loading, setLoading] = React.useState(true)
     const [jabatans, setJabatans] = React.useState<Jabatan[]>([])
@@ -52,10 +51,7 @@ export default function ManajemenJabatanPage() {
             }
         } catch (error) {
             console.error("Error fetching jabatans:", error)
-            toast({
-                title: "Error",
-                description: "Gagal mengambil data jabatan",
-            })
+            toast.error("Gagal mengambil data jabatan")
         } finally {
             setLoading(false)
         }
@@ -89,13 +85,13 @@ export default function ManajemenJabatanPage() {
         try {
             const res = await deleteJabatan(selectedJabatan.id)
             if (res.success) {
-                toast({ title: "Sukses", description: "Jabatan berhasil dihapus" })
+                toast.success("Jabatan berhasil dihapus")
                 fetchJabatans()
             } else {
-                toast({ title: "Gagal", description: res.message || "Gagal menghapus jabatan" })
+                toast.error(res.message || "Gagal menghapus jabatan")
             }
         } catch (error) {
-            toast({ title: "Error", description: "Terjadi kesalahan sistem" })
+            toast.error("Terjadi kesalahan sistem")
         } finally {
             setIsDeleteModalOpen(false)
         }
@@ -106,21 +102,21 @@ export default function ManajemenJabatanPage() {
             if (data.id) {
                 const res = await updateJabatan(data.id, { nama: data.nama })
                 if (res.success) {
-                    toast({ title: "Sukses", description: "Jabatan berhasil diperbarui" })
+                    toast.success("Jabatan berhasil diperbarui")
                 } else {
-                    toast({ title: "Gagal", description: res.message })
+                    toast.error(res.message)
                 }
             } else {
                 const res = await createJabatan({ nama: data.nama })
                 if (res.success) {
-                    toast({ title: "Sukses", description: "Jabatan berhasil ditambahkan" })
+                    toast.success("Jabatan berhasil ditambahkan")
                 } else {
-                    toast({ title: "Gagal", description: res.message })
+                    toast.error(res.message)
                 }
             }
             fetchJabatans()
         } catch (error) {
-            toast({ title: "Error", description: "Gagal menyimpan data" })
+            toast.error("Gagal menyimpan data")
         }
     }
 
