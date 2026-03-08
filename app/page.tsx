@@ -27,7 +27,7 @@ export default function LoginPage() {
 
       if (res.status === "success") {
         router.push("/admin")
-        router.refresh() // Ensure middleware catches the new cookie
+        router.refresh() // Ensure proxy catches the new cookie
       } else {
         setError(res.message || "Kredensial tidak valid")
       }

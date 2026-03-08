@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
     const token = request.cookies.get('admin_token')?.value
     const isLoginPage = request.nextUrl.pathname === '/'
 
@@ -18,7 +18,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
 }
 
-// Config to specify which routes should be handled by this middleware
+// Config to specify which routes should be handled by this proxy
 export const config = {
     matcher: [
         /*

@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
         if (data.status === "success" && data.token) {
             const nextResponse = NextResponse.json(data)
 
-            // Set HTTP-only cookie for server-side auth (middleware) and security
+            // Set HTTP-only cookie for server-side auth (proxy) and security
             nextResponse.cookies.set({
                 name: "admin_token",
                 value: data.token,
