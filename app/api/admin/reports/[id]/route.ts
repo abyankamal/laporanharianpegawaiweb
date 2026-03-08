@@ -10,7 +10,7 @@ export async function GET(
         const token = req.cookies.get("admin_token")?.value
         const { id } = await params
 
-        const response = await fetch(`${BACKEND_URL}/api/reports/${id}`, {
+        const response = await fetch(`${BACKEND_URL}/api/web/reports/${id}`, {
             headers: {
                 "Authorization": `Bearer ${token}`,
             },

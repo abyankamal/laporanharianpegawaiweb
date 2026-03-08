@@ -127,6 +127,30 @@ function AdminHeader() {
     );
 }
 
+function AdminContent({ children }: { children: React.ReactNode }) {
+    const { loading } = useUser();
+    return (
+        <div className="flex flex-col w-full h-screen overflow-hidden">
+            <AdminHeader />
+            <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-muted/10">
+                {loading ? (
+                    <div className="flex h-full items-center justify-center">
+                        <div className="flex flex-col items-center gap-2">
+                            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                            <p className="text-sm text-muted-foreground animate-pulse">Memverifikasi Sesi...</p>
+                        </div>
+                    </div>
+                ) : (
+                    children
+                )}
+            </main>
+            <footer className="flex-shrink-0 border-t bg-white p-4 text-center text-sm text-muted-foreground">
+                Hak Cipta © 2026 SIOPIK - <strong>Kelurahan Sukanegla</strong>
+            </footer>
+        </div>
+    )
+}
+
 export default function AdminLayout({
     children,
 }: {
@@ -137,15 +161,7 @@ export default function AdminLayout({
             <TooltipProvider>
                 <SidebarProvider>
                     <AppSidebar />
-                    <div className="flex flex-col w-full h-screen overflow-hidden">
-                        <AdminHeader />
-                        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-muted/10">
-                            {children}
-                        </main>
-                        <footer className="flex-shrink-0 border-t bg-white p-4 text-center text-sm text-muted-foreground">
-                            Hak Cipta © 2026 SIOPIK - <strong>Kelurahan Sukanegla</strong>
-                        </footer>
-                    </div>
+                    <AdminContent>{children}</AdminContent>
                 </SidebarProvider>
             </TooltipProvider>
         </UserProvider>

@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
         const queryParams = new URLSearchParams({ search, role, page, limit }).toString()
 
-        const response = await fetch(`${BACKEND_URL}/api/admin/pegawai?${queryParams}`, {
+        const response = await fetch(`${BACKEND_URL}/api/web/admin/pegawai?${queryParams}`, {
             headers: {
                 "Authorization": `Bearer ${token}`,
             },
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     try {
         const token = req.cookies.get("admin_token")?.value
         const body = await req.json()
-        const response = await fetch(`${BACKEND_URL}/api/admin/pegawai`, {
+        const response = await fetch(`${BACKEND_URL}/api/web/admin/pegawai`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

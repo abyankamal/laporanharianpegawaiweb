@@ -25,10 +25,17 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
                 setUser(res.data);
             } else {
                 setUser(null);
+                // Redirect jika Unauthorized atau session expired
+                if (window.location.pathname.startsWith('/admin')) {
+                    router.push("/");
+                }
             }
         } catch (error) {
             console.error("Failed to fetch profile:", error);
             setUser(null);
+            if (window.location.pathname.startsWith('/admin')) {
+                router.push("/");
+            }
         } finally {
             setLoading(false);
         }

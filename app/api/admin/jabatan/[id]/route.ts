@@ -11,7 +11,7 @@ export async function PUT(
         const { id } = await params
         const body = await req.json()
 
-        const response = await fetch(`${BACKEND_URL}/api/admin/jabatan/${id}`, {
+        const response = await fetch(`${BACKEND_URL}/api/web/admin/jabatan/${id}`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
@@ -39,7 +39,7 @@ export async function DELETE(
         const token = req.cookies.get("admin_token")?.value
         const { id } = await params
 
-        const response = await fetch(`${BACKEND_URL}/api/admin/jabatan/${id}`, {
+        const response = await fetch(`${BACKEND_URL}/api/web/admin/jabatan/${id}`, {
             method: "DELETE",
             headers: {
                 "Authorization": `Bearer ${token}`,

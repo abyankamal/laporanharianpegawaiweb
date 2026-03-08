@@ -11,7 +11,7 @@ export async function PUT(
         const token = req.cookies.get("admin_token")?.value
         const id = params.id
         const body = await req.formData()
-        const response = await fetch(`${BACKEND_URL}/api/tasks/${id}`, {
+        const response = await fetch(`${BACKEND_URL}/api/web/tasks/${id}`, {
             method: "PUT",
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -36,7 +36,7 @@ export async function DELETE(
     try {
         const token = req.cookies.get("admin_token")?.value
         const id = params.id
-        const response = await fetch(`${BACKEND_URL}/api/tasks/${id}`, {
+        const response = await fetch(`${BACKEND_URL}/api/web/tasks/${id}`, {
             method: "DELETE",
             headers: {
                 "Authorization": `Bearer ${token}`,

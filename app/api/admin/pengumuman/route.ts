@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
         const queryParams = new URLSearchParams({ search, page, limit }).toString()
 
-        const response = await fetch(`${BACKEND_URL}/api/admin/pengumuman?${queryParams}`, {
+        const response = await fetch(`${BACKEND_URL}/api/web/admin/pengumuman?${queryParams}`, {
             headers: {
                 "Authorization": `Bearer ${token}`,
             },
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     try {
         const token = req.cookies.get("admin_token")?.value
         const body = await req.json()
-        const response = await fetch(`${BACKEND_URL}/api/admin/pengumuman`, {
+        const response = await fetch(`${BACKEND_URL}/api/web/admin/pengumuman`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

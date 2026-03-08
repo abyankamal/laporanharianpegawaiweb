@@ -11,7 +11,7 @@ export async function PUT(
         const token = req.cookies.get("admin_token")?.value
         const { id } = await params
         const body = await req.json()
-        const response = await fetch(`${BACKEND_URL}/api/admin/pengumuman/${id}`, {
+        const response = await fetch(`${BACKEND_URL}/api/web/admin/pengumuman/${id}`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
@@ -37,7 +37,7 @@ export async function DELETE(
     try {
         const token = req.cookies.get("admin_token")?.value
         const { id } = await params
-        const response = await fetch(`${BACKEND_URL}/api/admin/pengumuman/${id}`, {
+        const response = await fetch(`${BACKEND_URL}/api/web/admin/pengumuman/${id}`, {
             method: "DELETE",
             headers: {
                 "Authorization": `Bearer ${token}`,
