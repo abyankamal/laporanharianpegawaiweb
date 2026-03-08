@@ -5,14 +5,11 @@ export interface Announcement {
     judul: string;
     pesan: string;
     audience: string;
-    status: string;
     tanggal: string;
 }
 
 export interface AnnouncementStatistik {
     aktif: number;
-    terjadwal: number;
-    kedaluwarsa: number;
 }
 
 export interface AnnouncementListResponse {

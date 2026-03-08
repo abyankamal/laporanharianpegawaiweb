@@ -93,10 +93,10 @@ export default function ManajemenPegawaiPage() {
             // Support both 'success' boolean and 'status === "success"'
             const isSuccess = response.success || (response as any).status === "success"
 
-            if (isSuccess) {
-                setEmployees(response.data.list)
-                setTotalData(response.data.pagination.total_data)
-                setTotalPages(response.data.pagination.total_pages)
+            if (isSuccess && response.data) {
+                setEmployees(response.data.list || [])
+                setTotalData(response.data.pagination?.total_data || 0)
+                setTotalPages(response.data.pagination?.total_pages || 1)
             }
         } catch (error) {
             console.error("Error fetching employees:", error)
@@ -263,14 +263,14 @@ export default function ManajemenPegawaiPage() {
                                         Memuat data...
                                     </TableCell>
                                 </TableRow>
-                            ) : employees.length === 0 ? (
+                            ) : (employees?.length || 0) === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center py-10">
                                         Tidak ada data pegawai.
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                employees.map((item) => (
+                                employees?.map((item) => (
                                     <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
                                         <TableCell className="text-center">
                                             <Avatar className="size-8 mx-auto border-2 border-background shadow-sm">

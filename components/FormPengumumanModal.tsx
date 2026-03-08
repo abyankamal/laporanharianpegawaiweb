@@ -1,8 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { format } from "date-fns"
-import { CalendarIcon, Send } from "lucide-react"
+import { Send } from "lucide-react"
 
 import {
     Dialog,
@@ -22,13 +21,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { cn } from "@/lib/utils"
 
 import { createAnnouncement, updateAnnouncement } from "@/lib/api/announcements"
 
@@ -52,8 +44,6 @@ interface FormPengumumanModalProps {
 const DEFAULT_FORM_DATA = {
     judul: "",
     audience: "Semua Pegawai",
-    status: "Aktif",
-    waktuPublish: "08:00",
     isi: "",
 }
 
@@ -70,9 +60,6 @@ export function FormPengumumanModal({
     // Base text fields
     const [formData, setFormData] = React.useState(DEFAULT_FORM_DATA)
 
-    // Custom states for dates
-    const [publishDate, setPublishDate] = React.useState<Date | undefined>(undefined)
-
     // Populate data when modal opens in edit mode
     React.useEffect(() => {
         if (isOpen) {
@@ -80,20 +67,11 @@ export function FormPengumumanModal({
             if (pengumumanData) {
                 setFormData({
                     judul: pengumumanData.judul || "",
-                    audience: pengumumanData.audience || "Semua Pegawai",
-                    status: pengumumanData.status || "Aktif",
-                    waktuPublish: pengumumanData.waktuPublish || "08:00",
+                    audience: "Semua Pegawai", // Backend simplified logic
                     isi: pengumumanData.isi || "",
                 })
-
-                if (pengumumanData.tanggalPublish) {
-                    setPublishDate(new Date(pengumumanData.tanggalPublish))
-                } else {
-                    setPublishDate(new Date())
-                }
             } else {
                 setFormData(DEFAULT_FORM_DATA)
-                setPublishDate(new Date())
             }
         }
     }, [isOpen, pengumumanData])
@@ -142,7 +120,7 @@ export function FormPengumumanModal({
                         {isEditMode ? "Edit Pengumuman" : "Buat Pengumuman Baru"}
                     </DialogTitle>
                     <p className="text-sm text-muted-foreground mt-1.5">
-                        Informasi ini akan dikirimkan sebagai notifikasi ke aplikasi pegawai.
+                        Informasi ini akan langsung dikirimkan ke seluruh pegawai SIOPIK.
                     </p>
                 </DialogHeader>
 
@@ -160,85 +138,24 @@ export function FormPengumumanModal({
                             />
                         </div>
 
-                        {/* Baris 2: Target Audience & Status */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="audience">Target Audience <span className="text-red-500">*</span></Label>
-                                <Select
-                                    value={formData.audience}
-                                    onValueChange={(val) => handleInputChange("audience", val)}
-                                    required
-                                >
-                                    <SelectTrigger id="audience">
-                                        <SelectValue placeholder="Pilih Audience" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Semua Pegawai">Semua Pegawai</SelectItem>
-                                        <SelectItem value="Staff IT & Admin">Staff IT & Admin</SelectItem>
-                                        <SelectItem value="Kasi & Kaur">Kasi & Kaur</SelectItem>
-                                        <SelectItem value="Kepala Desa">Kepala Desa</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="status">Status <span className="text-red-500">*</span></Label>
-                                <Select
-                                    value={formData.status}
-                                    onValueChange={(val) => handleInputChange("status", val)}
-                                    required
-                                >
-                                    <SelectTrigger id="status">
-                                        <SelectValue placeholder="Pilih Status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Aktif">Aktif</SelectItem>
-                                        <SelectItem value="Terjadwal">Terjadwal</SelectItem>
-                                        <SelectItem value="Kedaluwarsa">Kedaluwarsa</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                        {/* Baris 2: Target Audience */}
+                        <div className="space-y-2">
+                            <Label htmlFor="audience">Target Audience <span className="text-red-500">*</span></Label>
+                            <Select
+                                value={formData.audience}
+                                onValueChange={(val) => handleInputChange("audience", val)}
+                                required
+                            >
+                                <SelectTrigger id="audience">
+                                    <SelectValue placeholder="Pilih Audience" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Semua Pegawai">Semua Pegawai</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
 
-                        {/* Baris 3: Tanggal Publish & Waktu Publish */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2 flex flex-col">
-                                <Label>Tanggal Publish <span className="text-red-500">*</span></Label>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant={"outline"}
-                                            className={cn(
-                                                "w-full justify-start text-left font-normal",
-                                                !publishDate && "text-muted-foreground"
-                                            )}
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {publishDate ? format(publishDate, "PPP") : <span>Pilih Tanggal</span>}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar
-                                            mode="single"
-                                            selected={publishDate}
-                                            onSelect={setPublishDate}
-                                            initialFocus
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-                            <div className="space-y-2 flex flex-col">
-                                <Label htmlFor="waktuPublish">Waktu Publish <span className="text-red-500">*</span></Label>
-                                <Input
-                                    id="waktuPublish"
-                                    type="time"
-                                    value={formData.waktuPublish}
-                                    onChange={(e) => handleInputChange("waktuPublish", e.target.value)}
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        {/* Baris 4: Isi Pesan */}
+                        {/* Baris 3: Isi Pesan */}
                         <div className="space-y-2">
                             <Label htmlFor="isi">Isi Pengumuman <span className="text-red-500">*</span></Label>
                             <Textarea
