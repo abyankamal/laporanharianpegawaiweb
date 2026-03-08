@@ -45,7 +45,8 @@ import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 import { CustomPagination } from "@/components/CustomPagination"
 
-import { getRekapLaporan, Report, downloadReportsPDF, downloadReportsExcel, getReportDetail } from "@/lib/api/reports"
+import { getRekapLaporan, Report, downloadReportsPDF, downloadReportsExcel, getReportDetail, downloadAttachments } from "@/lib/api/reports"
+import { getProfile } from "@/lib/api/auth"
 import { getWorkHour, getHolidays, WorkHour, Holiday } from "@/lib/api/settings"
 import { isWithinInterval, parse, isFriday, isSaturday, isSunday } from "date-fns"
 
@@ -67,6 +68,7 @@ export default function LaporanRekapPage() {
     const [totalData, setTotalData] = React.useState(0)
     const [workHour, setWorkHour] = React.useState<WorkHour | null>(null)
     const [holidays, setHolidays] = React.useState<Holiday[]>([])
+    const [userRole, setUserRole] = React.useState<string | null>(null)
     const limit = 10
 
     // Debounce search
@@ -80,16 +82,21 @@ export default function LaporanRekapPage() {
 
     // Initial fetch for settings
     React.useEffect(() => {
-        const fetchSettings = async () => {
+        const fetchSettingsAndProfile = async () => {
             try {
-                const [whRes, hRes] = await Promise.all([getWorkHour(), getHolidays()])
+                const [whRes, hRes, profRes] = await Promise.all([
+                    getWorkHour(),
+                    getHolidays(),
+                    getProfile()
+                ])
                 if (whRes.status === "success") setWorkHour(whRes.data)
                 if (hRes.status === "success") setHolidays(hRes.data)
+                if (profRes.status === "success") setUserRole(profRes.data.role)
             } catch (error) {
-                console.error("Error fetching settings:", error)
+                console.error("Error fetching settings or profile:", error)
             }
         }
-        fetchSettings()
+        fetchSettingsAndProfile()
     }, [])
 
     const calculateStatusWaktu = React.useCallback((jamLapor: string, tanggalStr: string) => {
@@ -231,6 +238,18 @@ export default function LaporanRekapPage() {
                         <FileText className="size-4" />
                         <span className="hidden sm:inline">Export PDF</span>
                         <span className="sm:hidden">PDF</span>
+                    </Button>
+                    <Button
+                        variant="outline"
+                        className="flex items-center gap-2 border-blue-200 text-blue-600 hover:bg-blue-50"
+                        onClick={() => downloadAttachments({
+                            start_date: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
+                            end_date: endDate ? format(endDate, "yyyy-MM-dd") : undefined
+                        })}
+                    >
+                        <Download className="size-4" />
+                        <span className="hidden sm:inline">Lampiran</span>
+                        <span className="sm:hidden">Lampiran</span>
                     </Button>
                     <Button
                         className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
@@ -461,6 +480,8 @@ export default function LaporanRekapPage() {
                 report={selectedReport}
                 fotoUrl={fotoUrl}
                 dokumenUrl={dokumenUrl}
+                role={userRole}
+                onSuccess={fetchReports}
             />
         </div>
     )

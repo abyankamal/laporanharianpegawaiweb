@@ -183,3 +183,29 @@ export const getReportDetail = async (id: number) => {
         throw error
     }
 }
+
+export const evaluateReport = async (reportId: number, status: string, comment: string) => {
+    try {
+        const response = await fetch('/api/admin/reports/evaluate', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                report_id: reportId,
+                status: status,
+                komentar: comment
+            })
+        })
+        return await response.json()
+    } catch (error) {
+        console.error("Error in evaluateReport:", error)
+        return { success: false, message: "Gagal menghubungkan ke server untuk evaluasi" }
+    }
+}
+
+export const downloadAttachments = async (params: { start_date?: string, end_date?: string, user_id?: number }) => {
+    const queryParams = new URLSearchParams()
+    Object.entries(params).forEach(([key, value]) => {
+        if (value) queryParams.append(key, value.toString())
+    })
+    window.location.href = `/api/admin/reports/export/attachments?${queryParams.toString()}`
+}

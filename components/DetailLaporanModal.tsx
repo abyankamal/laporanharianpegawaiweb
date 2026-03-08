@@ -2,7 +2,8 @@
 
 import * as React from "react"
 import Image from "next/image"
-import { X, Calendar, Clock, FileText, CheckSquare, Image as ImageIcon, ExternalLink } from "lucide-react"
+import { X, Calendar, Clock, FileText, CheckSquare, Image as ImageIcon, ExternalLink, MessageSquare, Send } from "lucide-react"
+import { toast } from "sonner"
 
 import {
     Dialog,
@@ -15,7 +16,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
-import { Report } from "@/lib/api/reports"
+import { Report, evaluateReport } from "@/lib/api/reports"
+import { Textarea } from "@/components/ui/textarea"
 
 // Interface LaporanData dihapus karena kita menggunakan Report dari lib/api/reports.ts
 
@@ -25,6 +27,8 @@ interface DetailLaporanModalProps {
     onClose: () => void
     fotoUrl: string | null
     dokumenUrl?: string | null
+    role?: string | null
+    onSuccess?: () => void
 }
 
 export function DetailLaporanModal({
@@ -32,9 +36,21 @@ export function DetailLaporanModal({
     isOpen,
     onClose,
     fotoUrl,
-    dokumenUrl
+    dokumenUrl,
+    role,
+    onSuccess
 }: DetailLaporanModalProps) {
     const [imgSrc, setImgSrc] = React.useState<string | null>(null)
+    const [comment, setComment] = React.useState("")
+    const [isSubmitting, setIsSubmitting] = React.useState(false)
+
+    React.useEffect(() => {
+        if (report?.komentar_atasan) {
+            setComment(report.komentar_atasan)
+        } else {
+            setComment("")
+        }
+    }, [report])
 
     React.useEffect(() => {
         if (fotoUrl) {
@@ -262,6 +278,62 @@ export function DetailLaporanModal({
                             )}
                         </div>
                     </div>
+
+                    {/* Form Evaluasi (Hanya untuk Lurah/Sekertaris) */}
+                    {(role === "lurah" || role === "sekertaris") && (
+                        <div className="mt-4 space-y-4 rounded-2xl border-2 border-blue-100 bg-blue-50/30 p-5 dark:border-blue-900/30 dark:bg-blue-950/20">
+                            <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
+                                <MessageSquare className="size-5" />
+                                <h4 className="text-sm font-bold">Evaluasi & Masukan Atasan</h4>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Textarea
+                                    placeholder="Tuliskan masukan atau catatan untuk laporan ini..."
+                                    className="min-h-[100px] bg-background resize-none border-blue-100 focus-visible:ring-blue-400"
+                                    value={comment}
+                                    onChange={(e) => setComment(e.target.value)}
+                                />
+                                <p className="text-[10px] text-muted-foreground italic">
+                                    * Menyimpan evaluasi akan otomatis mengubah status laporan menjadi "Disetujui".
+                                </p>
+                            </div>
+
+                            <Button
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold gap-2 shadow-lg shadow-blue-200 dark:shadow-none"
+                                onClick={async () => {
+                                    if (!comment.trim()) {
+                                        toast.error("Mohon isi komentar/masukan")
+                                        return
+                                    }
+
+                                    setIsSubmitting(true)
+                                    try {
+                                        const res = await evaluateReport(report.id, "sudah_direview", comment)
+                                        if (res.status === "success" || res.success) {
+                                            toast.success("Evaluasi berhasil disimpan")
+                                            if (onSuccess) onSuccess()
+                                            onClose()
+                                        } else {
+                                            toast.error(res.message || "Gagal menyimpan evaluasi")
+                                        }
+                                    } catch (error) {
+                                        toast.error("Terjadi kesalahan sistem")
+                                    } finally {
+                                        setIsSubmitting(false)
+                                    }
+                                }}
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? (
+                                    <div className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                ) : (
+                                    <Send className="size-4" />
+                                )}
+                                Simpan & Setujui Laporan
+                            </Button>
+                        </div>
+                    )}
                 </div>
 
                 <DialogFooter className="border-t pt-4">
