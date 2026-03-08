@@ -40,7 +40,7 @@ function AdminHeader() {
     }, [])
 
     return (
-        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-2 border-b bg-background/80 backdrop-blur-md px-4 shadow-sm transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+        <header className="flex-shrink-0 border-b bg-background/95 backdrop-blur sticky top-0 z-20 flex h-16 items-center justify-between gap-2 px-4 shadow-sm transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
             <div className="flex items-center gap-2">
                 <SidebarTrigger className="-ml-1" />
                 <Separator orientation="vertical" className="mr-2 h-4" />
@@ -123,12 +123,15 @@ export default function AdminLayout({
             <TooltipProvider>
                 <SidebarProvider>
                     <AppSidebar />
-                    <SidebarInset>
+                    <div className="flex flex-col w-full h-screen overflow-hidden">
                         <AdminHeader />
-                        <main className="flex flex-1 flex-col gap-4 p-4 md:p-6 bg-muted/10">
+                        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-muted/10">
                             {children}
                         </main>
-                    </SidebarInset>
+                        <footer className="flex-shrink-0 border-t bg-white p-4 text-center text-sm text-muted-foreground">
+                            Hak Cipta © 2026 SIOPIK - <strong>Kelurahan Sukanegla</strong>
+                        </footer>
+                    </div>
                 </SidebarProvider>
             </TooltipProvider>
         </UserProvider>
