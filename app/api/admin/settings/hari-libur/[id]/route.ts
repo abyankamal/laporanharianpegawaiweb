@@ -9,7 +9,7 @@ export async function DELETE(
     try {
         const token = req.cookies.get("admin_token")?.value
         const id = params.id
-        const response = await fetch(`${BACKEND_URL}/api/admin/settings/hari-libur/${id}`, {
+        const response = await fetch(`${BACKEND_URL}/api/admin/hari-libur/${id}`, {
             method: "DELETE",
             headers: {
                 "Authorization": `Bearer ${token}`,

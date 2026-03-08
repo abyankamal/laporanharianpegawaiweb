@@ -4,8 +4,6 @@ export interface WorkHour {
     jam_pulang: string
     jam_masuk_jumat: string
     jam_pulang_jumat: string
-    created_at: string
-    updated_at: string
 }
 
 export interface Holiday {
@@ -13,7 +11,6 @@ export interface Holiday {
     tanggal_mulai: string
     tanggal_selesai: string
     keterangan: string
-    created_at: string
 }
 
 export interface BaseResponse<T> {
