@@ -46,6 +46,8 @@ import { cn } from "@/lib/utils"
 import { CustomPagination } from "@/components/CustomPagination"
 
 import { getRekapLaporan, Report, downloadReportsPDF, downloadReportsExcel } from "@/lib/api/reports"
+import { getWorkHour, getHolidays, WorkHour, Holiday } from "@/lib/api/settings"
+import { isWithinInterval, parse, isFriday, isSaturday, isSunday } from "date-fns"
 
 export default function LaporanRekapPage() {
     const [startDate, setStartDate] = React.useState<Date>()
@@ -61,6 +63,8 @@ export default function LaporanRekapPage() {
     const [currentPage, setCurrentPage] = React.useState(1)
     const [totalPages, setTotalPages] = React.useState(1)
     const [totalData, setTotalData] = React.useState(0)
+    const [workHour, setWorkHour] = React.useState<WorkHour | null>(null)
+    const [holidays, setHolidays] = React.useState<Holiday[]>([])
     const limit = 10
 
     // Debounce search
@@ -71,6 +75,67 @@ export default function LaporanRekapPage() {
         }, 500)
         return () => clearTimeout(timer)
     }, [search])
+
+    // Initial fetch for settings
+    React.useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const [whRes, hRes] = await Promise.all([getWorkHour(), getHolidays()])
+                if (whRes.status === "success") setWorkHour(whRes.data)
+                if (hRes.status === "success") setHolidays(hRes.data)
+            } catch (error) {
+                console.error("Error fetching settings:", error)
+            }
+        }
+        fetchSettings()
+    }, [])
+
+    const calculateStatusWaktu = React.useCallback((jamLapor: string, tanggalStr: string) => {
+        if (!workHour) return "Tepat Waktu" // Fallback if settings not loaded
+
+        try {
+            // Check if it's a holiday
+            const reportDate = parse(tanggalStr, "dd/MM/yyyy", new Date())
+            const dateStr = format(reportDate, "yyyy-MM-dd")
+
+            const isHoliday = holidays.some(h => {
+                const start = new Date(h.tanggal_mulai)
+                const end = new Date(h.tanggal_selesai)
+                return dateStr >= h.tanggal_mulai && dateStr <= h.tanggal_selesai
+            })
+
+            const isWeekend = isSaturday(reportDate) || isSunday(reportDate)
+
+            if (isHoliday || isWeekend) {
+                return "Lembur (Hari Libur)"
+            }
+
+            // Check working hours
+            const jamLaporObj = parse(jamLapor, "HH:mm", new Date())
+
+            let jamMasuk: string, jamPulang: string
+            if (isFriday(reportDate)) {
+                jamMasuk = workHour.jam_masuk_jumat
+                jamPulang = workHour.jam_pulang_jumat
+            } else {
+                jamMasuk = workHour.jam_masuk
+                jamPulang = workHour.jam_pulang
+            }
+
+            const masukObj = parse(jamMasuk, "HH:mm", new Date())
+            const pulangObj = parse(jamPulang, "HH:mm", new Date())
+
+            // If reported before jam masuk or after jam pulang, it's overtime (Lembur)
+            if (jamLaporObj < masukObj || jamLaporObj > pulangObj) {
+                return "Lembur"
+            }
+
+            return "Tepat Waktu"
+        } catch (error) {
+            console.error("Error calculating status waktu:", error)
+            return "Tepat Waktu"
+        }
+    }, [workHour, holidays])
 
     const fetchReports = React.useCallback(async () => {
         setLoading(true)
@@ -86,7 +151,12 @@ export default function LaporanRekapPage() {
             })
 
             if (response.success) {
-                setReports(response.data)
+                // Apply frontend time validation logic
+                const validatedReports = response.data.map((report: Report) => ({
+                    ...report,
+                    status_waktu: calculateStatusWaktu(report.jam_lapor, report.tanggal)
+                }))
+                setReports(validatedReports)
                 setTotalPages(response.pagination.total_pages)
                 setTotalData(response.pagination.total_data)
             }
@@ -95,7 +165,7 @@ export default function LaporanRekapPage() {
         } finally {
             setLoading(false)
         }
-    }, [startDate, endDate, statusWaktu, statusReview, debouncedSearch, currentPage])
+    }, [startDate, endDate, statusWaktu, statusReview, debouncedSearch, currentPage, calculateStatusWaktu])
 
     React.useEffect(() => {
         fetchReports()

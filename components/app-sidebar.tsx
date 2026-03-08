@@ -135,14 +135,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarFooter>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton
-                            size="lg"
-                            className="hover:bg-destructive/10 hover:text-destructive transition-colors cursor-pointer"
-                            onClick={() => logout()}
-                        >
-                            <LogOut className="size-4" />
-                            <span>Keluar</span>
-                        </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarFooter>

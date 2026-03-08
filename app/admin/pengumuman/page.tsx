@@ -38,7 +38,9 @@ export default function PusatPengumumanPage() {
     const [search, setSearch] = React.useState("")
     const [currentPage, setCurrentPage] = React.useState(1)
     const [totalPages, setTotalPages] = React.useState(1)
+    const [totalData, setTotalData] = React.useState(0)
     const [isLoading, setIsLoading] = React.useState(true)
+    const [limit] = React.useState(10)
     const [error, setError] = React.useState<string | null>(null)
 
     const [announcements, setAnnouncements] = React.useState<Announcement[]>([])
@@ -62,6 +64,7 @@ export default function PusatPengumumanPage() {
                 setAnnouncements(response.data.list || [])
                 setStats(response.data.statistik || { aktif: 0 })
                 setTotalPages(response.data.pagination?.total_page || 1)
+                setTotalData(response.data.pagination?.total_data || 0)
             } else {
                 setError(response?.message || "Gagal mengambil data")
             }
@@ -271,6 +274,8 @@ export default function PusatPengumumanPage() {
                     currentPage={currentPage}
                     totalPages={totalPages}
                     onPageChange={setCurrentPage}
+                    totalData={totalData}
+                    limit={limit}
                     itemName="pengumuman"
                 />
             </Card>

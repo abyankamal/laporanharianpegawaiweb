@@ -300,6 +300,14 @@ export default function ManajemenPegawaiPage() {
                         </TableBody>
                     </Table>
                 </div>
+                <CustomPagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    totalData={totalData}
+                    limit={limit}
+                    itemName="pegawai"
+                />
             </Card>
 
             {/* Integasi Modal Hapus */}

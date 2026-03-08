@@ -66,6 +66,8 @@ export default function PemantauanTugasPage() {
             const response = await getTasks()
             if (response.success) {
                 setTasks(response.data)
+                setTotalData(response.data.length)
+                setTotalPages(Math.ceil(response.data.length / limit))
             } else {
                 setError(response.message || "Gagal mengambil data tugas")
             }
