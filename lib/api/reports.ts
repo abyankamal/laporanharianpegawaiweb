@@ -32,6 +32,12 @@ export interface Report {
     foto_path?: string
     dokumen_path?: string
     deskripsi?: string
+    // Full detail fields
+    jenis_tugas?: string
+    waktu_pelaksanaan?: string
+    lokasi?: string
+    komentar_atasan?: string | null
+    owner_role?: string
 }
 
 export interface RekapLaporanResponse {
@@ -137,4 +143,43 @@ export const downloadReportsExcel = async (params: { start_date?: string, end_da
         if (value) queryParams.append(key, value.toString())
     })
     window.location.href = `/api/admin/rekap-laporan/export/excel?${queryParams.toString()}`
+}
+
+export const getReportDetail = async (id: number) => {
+    try {
+        const response = await fetch(`/api/admin/reports/${id}`)
+        const result = await response.json()
+
+        if (!result.success) {
+            throw new Error(result.message || "Gagal mengambil detail laporan")
+        }
+
+        const item = result.data
+        const dateObj = new Date(item.waktu_pelaksanaan || item.waktu_pelaporan)
+
+        const mappedReport: Report = {
+            id: item.id,
+            tanggal: dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+            nama: item.user?.nama || "N/A",
+            jabatan: item.user?.jabatan?.nama_jabatan || "N/A",
+            laporan: item.judul_laporan || item.judul_kegiatan || "Tidak ada judul",
+            jam_lapor: dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+            status_waktu: item.status_waktu || (item.is_overtime ? "Lembur" : "Tepat Waktu"),
+            status_review: item.status === "sudah_direview" ? "Disetujui" : "Menunggu",
+            nip: item.user?.nip || "N/A",
+            foto_path: item.foto_url,
+            dokumen_path: item.dokumen_url,
+            deskripsi: item.deskripsi_hasil,
+            jenis_tugas: item.jenis_tugas,
+            waktu_pelaksanaan: item.waktu_pelaksanaan,
+            lokasi: item.lokasi,
+            komentar_atasan: item.komentar_atasan,
+            owner_role: item.owner_role
+        }
+
+        return mappedReport
+    } catch (error) {
+        console.error("Error in getReportDetail:", error)
+        throw error
+    }
 }

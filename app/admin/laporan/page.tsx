@@ -45,7 +45,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 import { CustomPagination } from "@/components/CustomPagination"
 
-import { getRekapLaporan, Report, downloadReportsPDF, downloadReportsExcel } from "@/lib/api/reports"
+import { getRekapLaporan, Report, downloadReportsPDF, downloadReportsExcel, getReportDetail } from "@/lib/api/reports"
 import { getWorkHour, getHolidays, WorkHour, Holiday } from "@/lib/api/settings"
 import { isWithinInterval, parse, isFriday, isSaturday, isSunday } from "date-fns"
 
@@ -173,41 +173,40 @@ export default function LaporanRekapPage() {
         fetchReports()
     }, [fetchReports])
 
-    const handleViewDetail = (report: Report) => {
-        const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+    const handleViewDetail = async (report: Report) => {
+        try {
+            // Kita ambil detail lebih lengkap dari API agar data baru muncul
+            const fullReport = await getReportDetail(report.id)
+            setSelectedReport(fullReport)
 
-        // Selesaikan URL Foto
-        let finalFotoUrl = null
-        if (report.foto_path && report.foto_path.trim() !== '') {
-            // Ganti backslash dengan forward slash untuk kompatibilitas URL
-            const cleanPath = report.foto_path.trim().replace(/\\/g, '/')
+            const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
-            if (cleanPath.startsWith('http')) {
-                finalFotoUrl = cleanPath
-            } else {
-                // Pastikan tidak ada double slash saat menggabungkan
-                const pathWithoutLeadingSlash = cleanPath.startsWith('/') ? cleanPath.slice(1) : cleanPath
-                finalFotoUrl = `${BACKEND_URL}/${pathWithoutLeadingSlash}`
+            const sanitizeUrl = (path: string | undefined | null) => {
+                if (!path || path.trim() === "" || path === "null") return null
+                if (path.startsWith("http")) return path
+                return `${BACKEND_URL}/${path.replace(/\\/g, '/').startsWith('/') ? path.replace(/\\/g, '/').slice(1) : path.replace(/\\/g, '/')}`
             }
-        }
 
-        // Selesaikan URL Dokumen
-        let finalDokumenUrl = null
-        if (report.dokumen_path && report.dokumen_path.trim() !== '') {
-            const cleanPath = report.dokumen_path.trim().replace(/\\/g, '/')
+            setFotoUrl(sanitizeUrl(fullReport.foto_path))
+            setDokumenUrl(sanitizeUrl(fullReport.dokumen_path))
+            setDetailModalOpen(true)
+        } catch (error) {
+            console.error("Gagal mengambil detail laporan:", error)
+            // Fallback ke data dari list jika API detail gagal
+            setSelectedReport(report)
 
-            if (cleanPath.startsWith('http')) {
-                finalDokumenUrl = cleanPath
-            } else {
-                const pathWithoutLeadingSlash = cleanPath.startsWith('/') ? cleanPath.slice(1) : cleanPath
-                finalDokumenUrl = `${BACKEND_URL}/${pathWithoutLeadingSlash}`
+            const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+
+            const sanitizeUrl = (path: string | undefined | null) => {
+                if (!path || path.trim() === "" || path === "null") return null
+                if (path.startsWith("http")) return path
+                return `${BACKEND_URL}/${path.replace(/\\/g, '/').startsWith('/') ? path.replace(/\\/g, '/').slice(1) : path.replace(/\\/g, '/')}`
             }
-        }
 
-        setSelectedReport(report)
-        setFotoUrl(finalFotoUrl)
-        setDokumenUrl(finalDokumenUrl)
-        setDetailModalOpen(true)
+            setFotoUrl(sanitizeUrl(report.foto_path))
+            setDokumenUrl(sanitizeUrl(report.dokumen_path))
+            setDetailModalOpen(true)
+        }
     }
 
     return (
