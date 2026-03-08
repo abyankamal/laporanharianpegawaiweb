@@ -4,12 +4,12 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
 
 export async function PUT(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const token = req.cookies.get("admin_token")?.value
+        const { id } = await params
         const body = await req.json()
-        const id = params.id
 
         const response = await fetch(`${BACKEND_URL}/api/admin/jabatan/${id}`, {
             method: "PUT",
@@ -33,11 +33,11 @@ export async function PUT(
 
 export async function DELETE(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const token = req.cookies.get("admin_token")?.value
-        const id = params.id
+        const { id } = await params
 
         const response = await fetch(`${BACKEND_URL}/api/admin/jabatan/${id}`, {
             method: "DELETE",

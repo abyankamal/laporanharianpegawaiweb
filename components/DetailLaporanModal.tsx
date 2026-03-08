@@ -2,13 +2,7 @@
 
 import * as React from "react"
 import Image from "next/image"
-import {
-    FileText,
-    Calendar,
-    Clock,
-    CheckSquare,
-    Image as ImageIcon
-} from "lucide-react"
+import { X, Calendar, Clock, FileText, CheckSquare, Image as ImageIcon, ExternalLink } from "lucide-react"
 
 import {
     Dialog,
@@ -21,31 +15,38 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
+import { Report } from "@/lib/api/reports"
 
-interface LaporanData {
-    nama: string
-    jabatan: string
-    nip: string
-    tanggal: string
-    jam: string
-    statusWaktu: string
-    statusReview: string
-    deskripsi: string
-    fotoUrl: string
-}
+// Interface LaporanData dihapus karena kita menggunakan Report dari lib/api/reports.ts
 
 interface DetailLaporanModalProps {
+    report: Report | null
     isOpen: boolean
     onClose: () => void
-    data: LaporanData | null
+    fotoUrl: string | null
+    dokumenUrl?: string | null
 }
 
 export function DetailLaporanModal({
+    report,
     isOpen,
     onClose,
-    data,
+    fotoUrl,
+    dokumenUrl
 }: DetailLaporanModalProps) {
-    if (!data) return null
+    const [imgSrc, setImgSrc] = React.useState<string | null>(null)
+
+    React.useEffect(() => {
+        if (fotoUrl) {
+            setImgSrc(fotoUrl)
+        } else {
+            setImgSrc(null)
+        }
+    }, [fotoUrl])
+
+    if (!report) return null
+
+    const fallbackUrl = "https://images.unsplash.com/photo-1573163231162-717dfc3e4146?q=80&w=800"
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -62,20 +63,20 @@ export function DetailLaporanModal({
                     <div className="relative flex items-center gap-4 rounded-xl border bg-muted/30 p-4">
                         <div className="relative">
                             <Avatar className="h-16 w-16 border-2 border-background shadow-sm">
-                                <AvatarImage src={`/avatars/${data.nip}.png`} alt={data.nama} />
+                                <AvatarImage src={`/avatars/${report.nip}.png`} alt={report.nama} />
                                 <AvatarFallback className="bg-primary text-primary-foreground text-xl">
-                                    {data.nama.substring(0, 2).toUpperCase()}
+                                    {report.nama.substring(0, 2).toUpperCase()}
                                 </AvatarFallback>
                             </Avatar>
                             <span className="absolute bottom-1 right-1 size-3.5 rounded-full border-2 border-background bg-green-500 shadow-sm" />
                         </div>
                         <div className="flex flex-col">
-                            <h3 className="text-lg font-bold leading-none">{data.nama}</h3>
+                            <h3 className="text-lg font-bold leading-none">{report.nama}</h3>
                             <p className="mt-1 text-sm font-semibold text-blue-600 dark:text-blue-400 leading-none">
-                                {data.jabatan}
+                                {report.jabatan}
                             </p>
                             <p className="mt-1.5 text-xs font-medium text-muted-foreground/80 font-mono">
-                                NIP: {data.nip}
+                                NIP: {report.nip}
                             </p>
                         </div>
                     </div>
@@ -88,7 +89,7 @@ export function DetailLaporanModal({
                             </span>
                             <div className="flex items-center gap-2 text-sm font-semibold">
                                 <Calendar className="size-4 text-muted-foreground" />
-                                {data.tanggal}
+                                {report.tanggal}
                             </div>
                         </div>
                         <div className="space-y-1.5">
@@ -97,7 +98,7 @@ export function DetailLaporanModal({
                             </span>
                             <div className="flex items-center gap-2 text-sm font-semibold">
                                 <Clock className="size-4 text-muted-foreground" />
-                                {data.jam} WIB
+                                {report.jam_lapor} WIB
                             </div>
                         </div>
                         <div className="space-y-1.5">
@@ -108,12 +109,12 @@ export function DetailLaporanModal({
                                 <Badge
                                     className={cn(
                                         "px-2.5 py-0.5 font-bold border-transparent",
-                                        data.statusWaktu === "Tepat Waktu"
+                                        report.status_waktu === "Tepat Waktu"
                                             ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400"
                                             : "bg-amber-100 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400"
                                     )}
                                 >
-                                    {data.statusWaktu}
+                                    {report.status_waktu}
                                 </Badge>
                             </div>
                         </div>
@@ -126,16 +127,16 @@ export function DetailLaporanModal({
                                     variant="outline"
                                     className={cn(
                                         "px-2.5 py-0.5 font-bold flex items-center gap-1.5 w-fit border-transparent",
-                                        data.statusReview === "Disetujui"
+                                        report.status_review === "Disetujui"
                                             ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
                                             : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
                                     )}
                                 >
                                     <span className={cn(
                                         "size-2 rounded-full",
-                                        data.statusReview === "Disetujui" ? "bg-blue-600" : "bg-slate-400"
+                                        report.status_review === "Disetujui" ? "bg-blue-600" : "bg-slate-400"
                                     )} />
-                                    {data.statusReview}
+                                    {report.status_review}
                                 </Badge>
                             </div>
                         </div>
@@ -149,7 +150,7 @@ export function DetailLaporanModal({
                         </h4>
                         <div className="rounded-xl bg-slate-50 p-4 border border-slate-100 dark:bg-slate-900/40 dark:border-slate-800/60">
                             <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                                {data.deskripsi}
+                                {report.deskripsi || report.laporan}
                             </p>
                         </div>
                     </div>
@@ -160,16 +161,52 @@ export function DetailLaporanModal({
                             <ImageIcon className="size-4 text-blue-600" />
                             Foto Pendukung / Bukti Kerja
                         </h4>
-                        <div className="relative aspect-video overflow-hidden rounded-xl border shadow-sm">
-                            <Image
-                                src={data.fotoUrl}
-                                alt="Bukti Kerja"
-                                fill
-                                className="object-cover transition-transform hover:scale-105 duration-500"
-                                sizes="(max-width: 600px) 100vw, 600px"
-                            />
+                        <div className="relative aspect-video overflow-hidden rounded-xl border shadow-sm bg-muted flex items-center justify-center">
+                            {imgSrc ? (
+                                <Image
+                                    src={imgSrc}
+                                    alt="Bukti Kerja"
+                                    fill
+                                    className="object-cover transition-transform hover:scale-105 duration-500"
+                                    sizes="(max-width: 600px) 100vw, 600px"
+                                    onError={() => {
+                                        if (imgSrc !== fallbackUrl) {
+                                            setImgSrc(fallbackUrl)
+                                        }
+                                    }}
+                                />
+                            ) : (
+                                <div className="flex flex-col items-center gap-2 text-muted-foreground/60">
+                                    <ImageIcon className="size-12" />
+                                    <span className="text-xs font-medium">Tidak ada foto bukti</span>
+                                </div>
+                            )}
                         </div>
                     </div>
+
+                    {/* Bagian Dokumen (Jika Ada) */}
+                    {dokumenUrl && (
+                        <div className="space-y-3">
+                            <h4 className="flex items-center gap-2 text-sm font-bold text-foreground">
+                                <FileText className="size-4 text-blue-600" />
+                                Dokumen Lampiran
+                            </h4>
+                            <div className="p-4 bg-muted/30 rounded-lg border border-dashed border-muted-foreground/20 flex flex-col items-center justify-center gap-3">
+                                <p className="text-xs text-muted-foreground text-center">
+                                    Laporan ini memiliki lampiran dokumen tambahan.
+                                </p>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full sm:w-auto flex items-center gap-2 bg-background hover:bg-muted"
+                                    onClick={() => window.open(dokumenUrl, '_blank')}
+                                >
+                                    <ExternalLink className="size-4" />
+                                    <span>Lihat Dokumen</span>
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <DialogFooter className="border-t pt-4">

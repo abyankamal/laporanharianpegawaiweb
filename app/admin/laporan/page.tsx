@@ -56,8 +56,10 @@ export default function LaporanRekapPage() {
     const [statusReview, setStatusReview] = React.useState<string>("semua")
     const [search, setSearch] = React.useState("")
     const [debouncedSearch, setDebouncedSearch] = React.useState("")
-    const [isDetailOpen, setIsDetailOpen] = React.useState(false)
-    const [selectedLaporan, setSelectedLaporan] = React.useState<any>(null)
+    const [isDetailModalOpen, setDetailModalOpen] = React.useState(false)
+    const [selectedReport, setSelectedReport] = React.useState<Report | null>(null)
+    const [fotoUrl, setFotoUrl] = React.useState<string | null>(null)
+    const [dokumenUrl, setDokumenUrl] = React.useState<string | null>(null)
     const [reports, setReports] = React.useState<Report[]>([])
     const [loading, setLoading] = React.useState(false)
     const [currentPage, setCurrentPage] = React.useState(1)
@@ -171,19 +173,41 @@ export default function LaporanRekapPage() {
         fetchReports()
     }, [fetchReports])
 
-    const handleViewDetail = (item: Report) => {
-        setSelectedLaporan({
-            nama: item.nama,
-            jabatan: item.jabatan,
-            nip: item.nip || "N/A",
-            tanggal: item.tanggal,
-            jam: item.jam_lapor,
-            statusWaktu: item.status_waktu,
-            statusReview: item.status_review,
-            deskripsi: item.deskripsi || item.laporan,
-            fotoUrl: item.foto_path || "https://images.unsplash.com/photo-1573163231162-717dfc3e4146?q=80&w=800"
-        })
-        setIsDetailOpen(true)
+    const handleViewDetail = (report: Report) => {
+        const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+
+        // Selesaikan URL Foto
+        let finalFotoUrl = null
+        if (report.foto_path && report.foto_path.trim() !== '') {
+            // Ganti backslash dengan forward slash untuk kompatibilitas URL
+            const cleanPath = report.foto_path.trim().replace(/\\/g, '/')
+
+            if (cleanPath.startsWith('http')) {
+                finalFotoUrl = cleanPath
+            } else {
+                // Pastikan tidak ada double slash saat menggabungkan
+                const pathWithoutLeadingSlash = cleanPath.startsWith('/') ? cleanPath.slice(1) : cleanPath
+                finalFotoUrl = `${BACKEND_URL}/${pathWithoutLeadingSlash}`
+            }
+        }
+
+        // Selesaikan URL Dokumen
+        let finalDokumenUrl = null
+        if (report.dokumen_path && report.dokumen_path.trim() !== '') {
+            const cleanPath = report.dokumen_path.trim().replace(/\\/g, '/')
+
+            if (cleanPath.startsWith('http')) {
+                finalDokumenUrl = cleanPath
+            } else {
+                const pathWithoutLeadingSlash = cleanPath.startsWith('/') ? cleanPath.slice(1) : cleanPath
+                finalDokumenUrl = `${BACKEND_URL}/${pathWithoutLeadingSlash}`
+            }
+        }
+
+        setSelectedReport(report)
+        setFotoUrl(finalFotoUrl)
+        setDokumenUrl(finalDokumenUrl)
+        setDetailModalOpen(true)
     }
 
     return (
@@ -433,9 +457,11 @@ export default function LaporanRekapPage() {
             </Card>
 
             <DetailLaporanModal
-                isOpen={isDetailOpen}
-                onClose={() => setIsDetailOpen(false)}
-                data={selectedLaporan}
+                isOpen={isDetailModalOpen}
+                onClose={() => setDetailModalOpen(false)}
+                report={selectedReport}
+                fotoUrl={fotoUrl}
+                dokumenUrl={dokumenUrl}
             />
         </div>
     )

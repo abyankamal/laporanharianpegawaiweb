@@ -30,6 +30,7 @@ export interface Report {
     status_review: string
     nip?: string
     foto_path?: string
+    dokumen_path?: string
     deskripsi?: string
 }
 
@@ -95,6 +96,7 @@ export const getRekapLaporan = async (params: {
                 status_review: (item.status === "sudah_direview" || item.Status === "sudah_direview" || item.status === "Disetujui") ? "Disetujui" : "Menunggu",
                 nip: user?.nip || user?.NIP || "N/A",
                 foto_path: item.foto_url || item.FotoURL || item.foto_path || item.FotoPath,
+                dokumen_path: item.dokumen_url || item.DokumenURL || item.dokumen_path || item.DokumenPath,
                 deskripsi: item.deskripsi_hasil || item.DeskripsiHasil || item.deskripsi || item.Deskripsi
             }
         })
