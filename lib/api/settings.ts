@@ -57,3 +57,12 @@ export async function deleteHoliday(id: number): Promise<BaseResponse<null>> {
     })
     return res.json()
 }
+
+export async function updateHoliday(id: number, payload: Partial<Holiday>): Promise<BaseResponse<Holiday>> {
+    const res = await fetch(`/api/admin/settings/hari-libur/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+    })
+    return res.json()
+}

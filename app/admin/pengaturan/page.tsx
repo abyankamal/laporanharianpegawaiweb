@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Clock, Save, Trash2, Plus } from "lucide-react"
+import { Clock, Save, Trash2, Plus, Pencil } from "lucide-react"
 import { format } from "date-fns"
 import { id as localeID } from "date-fns/locale"
 
@@ -48,6 +48,7 @@ export default function PengaturanPage() {
 
     // State for Holiday Modal
     const [isHolidayModalOpen, setIsHolidayModalOpen] = React.useState(false)
+    const [selectedHoliday, setSelectedHoliday] = React.useState<Holiday | null>(null)
 
     const fetchSettings = React.useCallback(async () => {
         try {
@@ -113,10 +114,20 @@ export default function PengaturanPage() {
         }
     }
 
+    const handleEditHoliday = (holiday: Holiday) => {
+        setSelectedHoliday(holiday)
+        setIsHolidayModalOpen(true)
+    }
+
     const handleSaveHoliday = async () => {
-        toast.success("Hari libur berhasil ditambahkan")
+        if (selectedHoliday) {
+            toast.success("Hari libur berhasil diperbarui")
+        } else {
+            toast.success("Hari libur berhasil ditambahkan")
+        }
         fetchSettings()
         setIsHolidayModalOpen(false)
+        setSelectedHoliday(null)
     }
 
     const totalPages = Math.ceil(holidays.length / limit)
@@ -229,7 +240,10 @@ export default function PengaturanPage() {
                     </div>
                     <Button
                         className="w-full sm:w-auto flex items-center gap-2 bg-blue-600 hover:bg-blue-700 shadow-sm shrink-0 text-white"
-                        onClick={() => setIsHolidayModalOpen(true)}
+                        onClick={() => {
+                            setSelectedHoliday(null)
+                            setIsHolidayModalOpen(true)
+                        }}
                     >
                         <Plus className="size-4" />
                         <span>Tambah Hari Libur</span>
@@ -243,7 +257,7 @@ export default function PengaturanPage() {
                                 <TableHead className="w-[80px] pl-6 text-center">NO</TableHead>
                                 <TableHead className="min-w-[200px]">TANGGAL</TableHead>
                                 <TableHead className="min-w-[300px]">KETERANGAN</TableHead>
-                                <TableHead className="w-[100px] pr-6 text-center">AKSI</TableHead>
+                                <TableHead className="w-[120px] pr-6 text-center">AKSI</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -280,14 +294,24 @@ export default function PengaturanPage() {
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="pr-6 text-center">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="size-8 rounded-full text-muted-foreground hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
-                                                onClick={() => handleDeleteHoliday(item.id)}
-                                            >
-                                                <Trash2 className="size-4" />
-                                            </Button>
+                                            <div className="flex items-center justify-center gap-2">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="size-8 rounded-full text-muted-foreground hover:text-blue-600 hover:bg-blue-50"
+                                                    onClick={() => handleEditHoliday(item)}
+                                                >
+                                                    <Pencil className="size-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="size-8 rounded-full text-muted-foreground hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
+                                                    onClick={() => handleDeleteHoliday(item.id)}
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -315,8 +339,12 @@ export default function PengaturanPage() {
             {/* Modal Form Tambah Hari Libur */}
             <FormHariLiburModal
                 isOpen={isHolidayModalOpen}
-                onClose={() => setIsHolidayModalOpen(false)}
+                onClose={() => {
+                    setIsHolidayModalOpen(false)
+                    setSelectedHoliday(null)
+                }}
                 onSave={handleSaveHoliday}
+                holidayData={selectedHoliday}
             />
         </div>
     )

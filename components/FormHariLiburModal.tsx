@@ -23,32 +23,42 @@ import {
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 
-import { createHoliday } from "@/lib/api/settings"
+import { createHoliday, updateHoliday, Holiday } from "@/lib/api/settings"
 
 interface FormHariLiburModalProps {
     isOpen: boolean
     onClose: () => void
     onSave: () => void
+    holidayData?: Holiday | null
 }
 
 export function FormHariLiburModal({
     isOpen,
     onClose,
     onSave,
+    holidayData,
 }: FormHariLiburModalProps) {
     const [date, setDate] = React.useState<DateRange | undefined>(undefined)
     const [keterangan, setKeterangan] = React.useState("")
     const [isSubmitting, setIsSubmitting] = React.useState(false)
     const [error, setError] = React.useState<string | null>(null)
 
-    // Reset form when modal opens
+    // Reset form when modal opens or layout data changes
     React.useEffect(() => {
         if (isOpen) {
-            setDate(undefined)
-            setKeterangan("")
+            if (holidayData) {
+                setDate({
+                    from: new Date(holidayData.tanggal_mulai),
+                    to: new Date(holidayData.tanggal_selesai)
+                })
+                setKeterangan(holidayData.keterangan)
+            } else {
+                setDate(undefined)
+                setKeterangan("")
+            }
             setError(null)
         }
-    }, [isOpen])
+    }, [isOpen, holidayData])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -61,11 +71,18 @@ export function FormHariLiburModal({
         setError(null)
 
         try {
-            const res = await createHoliday({
+            const payload = {
                 tanggal_mulai: format(date.from, "yyyy-MM-dd"),
                 tanggal_selesai: format(date.to || date.from, "yyyy-MM-dd"),
                 keterangan,
-            })
+            }
+
+            let res
+            if (holidayData?.id) {
+                res = await updateHoliday(holidayData.id, payload)
+            } else {
+                res = await createHoliday(payload)
+            }
 
             if (res.status === "success") {
                 onSave()
@@ -98,7 +115,9 @@ export function FormHariLiburModal({
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[450px]">
                 <DialogHeader>
-                    <DialogTitle className="text-xl">Tambah Hari Libur</DialogTitle>
+                    <DialogTitle className="text-xl">
+                        {holidayData ? "Edit Hari Libur" : "Tambah Hari Libur"}
+                    </DialogTitle>
                     <p className="text-sm text-muted-foreground mt-1.5">
                         Pilih tanggal tunggal atau rentang hari libur dan masukkan keterangannya.
                     </p>
