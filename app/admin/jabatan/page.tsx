@@ -154,7 +154,7 @@ export default function ManajemenJabatanPage() {
                     <Table>
                         <TableHeader className="bg-muted/50">
                             <TableRow>
-                                <TableHead className="w-[100px]">ID</TableHead>
+                                <TableHead className="w-[100px]">NO</TableHead>
                                 <TableHead>NAMA JABATAN</TableHead>
                                 <TableHead className="text-right">AKSI</TableHead>
                             </TableRow>
@@ -173,10 +173,10 @@ export default function ManajemenJabatanPage() {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                filteredJabatans.map((item) => (
+                                filteredJabatans.map((item, index) => (
                                     <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
-                                        <TableCell className="font-mono text-sm text-muted-foreground">
-                                            #{item.id}
+                                        <TableCell className="font-medium text-sm text-muted-foreground">
+                                            {index + 1}
                                         </TableCell>
                                         <TableCell className="font-semibold text-sm">
                                             {item.nama}
