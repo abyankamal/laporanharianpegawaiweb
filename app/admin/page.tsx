@@ -1,5 +1,7 @@
 "use client"
 
+import { UPLOADS_URL } from "@/lib/api-config"
+
 import { useState, useEffect } from "react"
 import { Users, FileText, Clock, Calendar, AlertCircle, CalendarCheck, FileBadge } from "lucide-react"
 
@@ -209,7 +211,7 @@ export default function AdminDashboard() {
                                                         Keterangan: {laporan.keterangan || "Tidak ada keterangan"}
                                                     </p>
                                                     {laporan.lampiran && (
-                                                        <a href={`http://localhost:8080/uploads/${laporan.lampiran}`} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline pt-1 inline-block">
+                                                        <a href={`${UPLOADS_URL}/${laporan.lampiran}`} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline pt-1 inline-block">
                                                             Pindai Lampiran: {laporan.lampiran}
                                                         </a>
                                                     )}

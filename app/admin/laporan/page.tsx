@@ -1,5 +1,7 @@
 "use client"
 
+import { BACKEND_URL } from "@/lib/api-config"
+
 import * as React from "react"
 import { format } from "date-fns"
 import {
@@ -186,7 +188,6 @@ export default function LaporanRekapPage() {
             const fullReport = await getReportDetail(report.id)
             setSelectedReport(fullReport)
 
-            const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
             const sanitizeUrl = (path: string | undefined | null) => {
                 if (!path || path.trim() === "" || path === "null") return null
@@ -202,7 +203,6 @@ export default function LaporanRekapPage() {
             // Fallback ke data dari list jika API detail gagal
             setSelectedReport(report)
 
-            const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
             const sanitizeUrl = (path: string | undefined | null) => {
                 if (!path || path.trim() === "" || path === "null") return null

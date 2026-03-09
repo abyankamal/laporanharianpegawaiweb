@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+import { BACKEND_URL } from "@/lib/api-config"
 
 export async function GET(req: NextRequest) {
     try {
@@ -16,7 +15,7 @@ export async function GET(req: NextRequest) {
             if (val) queryParams.append(p, val)
         })
 
-        const response = await fetch(`${BACKEND_URL}/api/reports/recap/export/pdf?${queryParams.toString()}`, {
+        const response = await fetch(`${BACKEND_URL}/api/web/reports/recap/export/pdf?${queryParams.toString()}`, {
             headers: {
                 "Authorization": `Bearer ${token}`,
             },

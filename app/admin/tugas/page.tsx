@@ -1,5 +1,7 @@
 "use client"
 
+import { BACKEND_URL } from "@/lib/api-config"
+
 import * as React from "react"
 import { format } from "date-fns"
 import {
@@ -146,9 +148,8 @@ export default function PemantauanTugasPage() {
 
     const handleViewFile = (filePath: string) => {
         // Adjust based on how your backend serves files
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
         // If server serves with /api prefix as seen in main.go
-        const fullUrl = `${baseUrl}/${filePath.replace(/^\//, '')}`
+        const fullUrl = `${BACKEND_URL}/${filePath.replace(/^\//, '')}`
         window.open(fullUrl, '_blank')
     }
 

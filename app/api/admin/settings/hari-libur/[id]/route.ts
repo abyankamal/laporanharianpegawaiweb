@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+import { BACKEND_URL } from "@/lib/api-config"
 
 export async function DELETE(
     req: NextRequest,
@@ -9,7 +8,7 @@ export async function DELETE(
     try {
         const token = req.cookies.get("admin_token")?.value
         const { id } = await params
-        const response = await fetch(`${BACKEND_URL}/api/admin/hari-libur/${id}`, {
+        const response = await fetch(`${BACKEND_URL}/api/web/admin/hari-libur/${id}`, {
             method: "DELETE",
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -33,7 +32,7 @@ export async function PUT(
         const token = req.cookies.get("admin_token")?.value
         const { id } = await params
         const body = await req.json()
-        const response = await fetch(`${BACKEND_URL}/api/admin/hari-libur/${id}`, {
+        const response = await fetch(`${BACKEND_URL}/api/web/admin/hari-libur/${id}`, {
             method: "PUT",
             headers: {
                 "Authorization": `Bearer ${token}`,

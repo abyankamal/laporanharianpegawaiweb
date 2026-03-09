@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+import { BACKEND_URL } from "@/lib/api-config"
 
 export async function GET(req: NextRequest) {
     try {
         const token = req.cookies.get("admin_token")?.value
-        const response = await fetch(`${BACKEND_URL}/api/admin/hari-libur`, {
+        const response = await fetch(`${BACKEND_URL}/api/web/admin/hari-libur`, {
             headers: {
                 "Authorization": `Bearer ${token}`,
             },
@@ -25,7 +24,7 @@ export async function POST(req: NextRequest) {
     try {
         const token = req.cookies.get("admin_token")?.value
         const body = await req.json()
-        const response = await fetch(`${BACKEND_URL}/api/admin/hari-libur`, {
+        const response = await fetch(`${BACKEND_URL}/api/web/admin/hari-libur`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
