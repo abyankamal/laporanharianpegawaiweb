@@ -3,11 +3,11 @@ import { BACKEND_URL } from "@/lib/api-config"
 
 export async function PUT(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const token = req.cookies.get("admin_token")?.value
-        const id = params.id
+        const { id } = await params
         const body = await req.formData()
         const response = await fetch(`${BACKEND_URL}/api/web/tasks/${id}`, {
             method: "PUT",
@@ -29,11 +29,11 @@ export async function PUT(
 
 export async function DELETE(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const token = req.cookies.get("admin_token")?.value
-        const id = params.id
+        const { id } = await params
         const response = await fetch(`${BACKEND_URL}/api/web/tasks/${id}`, {
             method: "DELETE",
             headers: {
