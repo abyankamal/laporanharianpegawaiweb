@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
             if (val) queryParams.append(p, val)
         })
 
-        const response = await fetch(`${BACKEND_URL}/api/web/reports/recap/export/pdf?${queryParams.toString()}`, {
+        const response = await fetch(`${BACKEND_URL}/api/web/admin/reports/export/pdf?${queryParams.toString()}`, {
             headers: {
                 "Authorization": `Bearer ${token}`,
             },

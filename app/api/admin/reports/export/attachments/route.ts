@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
         const token = req.cookies.get("admin_token")?.value
         const { searchParams } = new URL(req.url)
 
-        const response = await fetch(`${BACKEND_URL}/api/web/reports/export/attachments?${searchParams.toString()}`, {
+        const response = await fetch(`${BACKEND_URL}/api/web/admin/reports/export/attachments?${searchParams.toString()}`, {
             headers: {
                 "Authorization": `Bearer ${token}`,
             },
