@@ -217,12 +217,12 @@ export default function PemantauanTugasPage() {
                                             {(currentPage - 1) * limit + index + 1}
                                         </TableCell>
                                         <TableCell>
-                                            <div className="flex flex-col">
-                                                <span className="font-bold text-sm text-foreground">
+                                            <div className="flex flex-col max-w-[400px]">
+                                                <span className="font-bold text-sm text-foreground truncate" title={item.judul_tugas}>
                                                     {item.judul_tugas}
                                                 </span>
                                                 <p className="text-xs text-muted-foreground line-clamp-1">
-                                                    {item.deskripsi || "Tidak ada deskripsi"}
+                                                    {item.deskripsi ? (item.deskripsi.length > 80 ? `${item.deskripsi.substring(0, 80)}...` : item.deskripsi) : "Tidak ada deskripsi"}
                                                 </p>
                                             </div>
                                         </TableCell>
