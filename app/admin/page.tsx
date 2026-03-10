@@ -1,6 +1,6 @@
 "use client"
 
-import { UPLOADS_URL } from "@/lib/api-config"
+import { BACKEND_URL, UPLOADS_URL } from "@/lib/api-config"
 
 import { useState, useEffect } from "react"
 import { Users, FileText, Clock, Calendar, AlertCircle, CalendarCheck, FileBadge } from "lucide-react"
@@ -32,11 +32,11 @@ export default function AdminDashboard() {
                 setDashboardData(response.data)
             } else {
                 // If it's an authentication/authorization error, logout and redirect to login
-                if (response.message === "User tidak terautentikasi" || 
-                    response.message === "Role tidak ditemukan" || 
-                    response.message?.includes("Token tidak valid") || 
+                if (response.message === "User tidak terautentikasi" ||
+                    response.message === "Role tidak ditemukan" ||
+                    response.message?.includes("Token tidak valid") ||
                     response.message?.includes("kadal")) {
-                    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+                    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => { });
                     window.location.href = '/'
                     return;
                 }
@@ -110,7 +110,7 @@ export default function AdminDashboard() {
             <div className="flex flex-col gap-1">
                 <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Dashboard Overview</h1>
                 <p className="text-muted-foreground">
-                    Ringkasan data dan aktivitas SIOPIK Desa Sukanegla hari ini.
+                    Ringkasan data dan aktivitas SIOPIK Kelurahan Sukanegla hari ini.
                 </p>
             </div>
 
@@ -173,19 +173,6 @@ export default function AdminDashboard() {
                 </Card>
             </div>
 
-            {/* Pengumuman Global (Jika Ada) */}
-            {dashboardData?.notifikasi && (
-                <Alert className="bg-blue-50 border-blue-200 text-blue-900 shadow-sm">
-                    <AlertCircle className="h-5 w-5 text-blue-600" />
-                    <AlertTitle className="font-semibold text-base mb-1">
-                        Pengumuman Sistem: {dashboardData.notifikasi.judul}
-                    </AlertTitle>
-                    <AlertDescription className="text-sm text-blue-800">
-                        {dashboardData.notifikasi.pesan}
-                    </AlertDescription>
-                </Alert>
-            )}
-
             <div className="grid gap-6 md:grid-cols-3">
                 {/* Aktivitas Terbaru Section (Takes 2 columns on medium screens) */}
                 <Card className="md:col-span-2 flex flex-col h-full">
@@ -220,8 +207,8 @@ export default function AdminDashboard() {
                                                         Keterangan: {laporan.deskripsi_hasil || "Tidak ada keterangan"}
                                                     </p>
                                                     {(laporan.foto_url || laporan.dokumen_url) && (
-                                                        <a href={`${UPLOADS_URL}/${laporan.foto_url || laporan.dokumen_url}`} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline pt-1 inline-block">
-                                                            Pindai Lampiran
+                                                        <a href={`${BACKEND_URL}/${laporan.foto_url || laporan.dokumen_url}`} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline pt-1 inline-block">
+                                                            Lihat Lampiran
                                                         </a>
                                                     )}
                                                 </div>
