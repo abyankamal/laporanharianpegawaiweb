@@ -31,6 +31,15 @@ export default function AdminDashboard() {
             if (response.success) {
                 setDashboardData(response.data)
             } else {
+                // If it's an authentication/authorization error, logout and redirect to login
+                if (response.message === "User tidak terautentikasi" || 
+                    response.message === "Role tidak ditemukan" || 
+                    response.message?.includes("Token tidak valid") || 
+                    response.message?.includes("kadal")) {
+                    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+                    window.location.href = '/'
+                    return;
+                }
                 setError(response.message || "Gagal mengambil data")
             }
         } catch (err: unknown) {
@@ -200,19 +209,19 @@ export default function AdminDashboard() {
                                             <div className="flex flex-row gap-4 items-start flex-1">
                                                 <Avatar className="h-9 w-9">
                                                     <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                                                        {getInitials(laporan.User?.nama)}
+                                                        {getInitials(laporan.user?.nama)}
                                                     </AvatarFallback>
                                                 </Avatar>
                                                 <div className="flex flex-col space-y-1">
                                                     <p className="text-sm leading-none">
-                                                        <span className="font-semibold">{laporan.User?.nama || "Unknown User"}</span> mengubah status menjadi <span className="font-medium inline-flex whitespace-nowrap">{laporan.status_waktu}</span>
+                                                        <span className="font-semibold">{laporan.user?.nama || "Unknown User"}</span> mengubah status menjadi <span className="font-medium inline-flex whitespace-nowrap">{laporan.is_overtime ? "Lembur" : "Tepat Waktu"}</span>
                                                     </p>
                                                     <p className="text-xs text-muted-foreground pt-1">
-                                                        Keterangan: {laporan.keterangan || "Tidak ada keterangan"}
+                                                        Keterangan: {laporan.deskripsi_hasil || "Tidak ada keterangan"}
                                                     </p>
-                                                    {laporan.lampiran && (
-                                                        <a href={`${UPLOADS_URL}/${laporan.lampiran}`} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline pt-1 inline-block">
-                                                            Pindai Lampiran: {laporan.lampiran}
+                                                    {(laporan.foto_url || laporan.dokumen_url) && (
+                                                        <a href={`${UPLOADS_URL}/${laporan.foto_url || laporan.dokumen_url}`} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline pt-1 inline-block">
+                                                            Pindai Lampiran
                                                         </a>
                                                     )}
                                                 </div>

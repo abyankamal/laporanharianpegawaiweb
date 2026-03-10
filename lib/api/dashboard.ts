@@ -18,12 +18,13 @@ export interface Laporan {
     id: number
     user_id: number
     waktu_pelaporan: string
-    lokasi: string
-    keterangan: string
-    status_waktu: string
+    alamat_lokasi: string
+    deskripsi_hasil: string
+    is_overtime: boolean
     status: string
-    lampiran: string
-    User: User
+    foto_url: string | null
+    dokumen_url: string | null
+    user: User
 }
 
 export interface Notification {
