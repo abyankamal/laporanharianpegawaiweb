@@ -10,6 +10,8 @@ export interface BackendReport {
     jam_lapor: string
     foto_url: string | null
     created_at: string
+    komentar_atasan?: string | null
+    catatan?: string | null
     user?: {
         nama: string
         nip: string
@@ -99,11 +101,12 @@ export const getRekapLaporan = async (params: {
                 laporan: item.judul_kegiatan || item.JudulKegiatan || item.laporan || item.Laporan || "Tidak ada rincian",
                 jam_lapor: item.jam_lapor || item.JamLapor || dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
                 status_waktu: item.status_waktu || item.StatusWaktu || (item.is_overtime ? "Lembur" : "Tepat Waktu"),
-                status_review: (item.status === "sudah_direview" || item.Status === "sudah_direview" || item.status === "Disetujui") ? "Disetujui" : "Menunggu",
+                status_review: (item.status === "sudah_direview" || item.Status === "sudah_direview" || item.status === "Disetujui" || item.Status === "Disetujui") ? "Disetujui" : "Menunggu",
                 nip: user?.nip || user?.NIP || "N/A",
                 foto_path: item.foto_url || item.FotoURL || item.foto_path || item.FotoPath,
                 dokumen_path: item.dokumen_url || item.DokumenURL || item.dokumen_path || item.DokumenPath,
-                deskripsi: item.deskripsi_hasil || item.DeskripsiHasil || item.deskripsi || item.Deskripsi
+                deskripsi: item.deskripsi_hasil || item.DeskripsiHasil || item.deskripsi || item.Deskripsi,
+                komentar_atasan: item.komentar_atasan || item.KomentarAtasan || item.komentar || item.Komentar || item.catatan || item.Catatan
             }
         })
 
@@ -165,7 +168,7 @@ export const getReportDetail = async (id: number) => {
             laporan: item.judul_laporan || item.judul_kegiatan || "Tidak ada judul",
             jam_lapor: dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
             status_waktu: item.status_waktu || (item.is_overtime ? "Lembur" : "Tepat Waktu"),
-            status_review: item.status === "sudah_direview" ? "Disetujui" : "Menunggu",
+            status_review: (item.status === "sudah_direview" || item.status === "Disetujui") ? "Disetujui" : "Menunggu",
             nip: item.user?.nip || "N/A",
             foto_path: item.foto_url,
             dokumen_path: item.dokumen_url,
@@ -173,7 +176,7 @@ export const getReportDetail = async (id: number) => {
             jenis_tugas: item.jenis_tugas,
             waktu_pelaksanaan: item.waktu_pelaksanaan,
             lokasi: item.lokasi,
-            komentar_atasan: item.komentar_atasan,
+            komentar_atasan: item.komentar_atasan || item.komentar || item.KomentarAtasan || item.Komentar || item.catatan || item.Catatan,
             owner_role: item.owner_role
         }
 

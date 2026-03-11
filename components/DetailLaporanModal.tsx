@@ -201,7 +201,7 @@ export function DetailLaporanModal({
                     )}
 
                     {/* Komentar Atasan (Jika Ada) */}
-                    {report.komentar_atasan && (
+                    {report.komentar_atasan?.trim() && (
                         <div className="space-y-3">
                             <h4 className="flex items-center gap-2 text-sm font-bold text-foreground">
                                 <FileText className="size-4 text-emerald-600" />
@@ -279,8 +279,8 @@ export function DetailLaporanModal({
                         </div>
                     </div>
 
-                    {/* Form Evaluasi (Hanya untuk Lurah/Sekertaris) */}
-                    {(role === "lurah" || role === "sekertaris") && (
+                    {/* Form Evaluasi (Hanya untuk Lurah/Sekertaris dan jika belum disetujui) */}
+                    {(role === "lurah" || role === "sekertaris") && report.status_review !== "Disetujui" && (
                         <div className="mt-4 space-y-4 rounded-2xl border-2 border-blue-100 bg-blue-50/30 p-5 dark:border-blue-900/30 dark:bg-blue-950/20">
                             <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
                                 <MessageSquare className="size-5" />
