@@ -241,7 +241,7 @@ export default function PusatPengumumanPage() {
                                                     variant="ghost"
                                                     size="icon"
                                                     className="size-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                                                    onClick={() => alert(item.pesan)}
+                                                    onClick={() => toast(item.judul, { description: item.pesan })}
                                                 >
                                                     <Eye className="size-4" />
                                                 </Button>
