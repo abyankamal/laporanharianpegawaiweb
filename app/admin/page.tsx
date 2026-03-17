@@ -201,7 +201,7 @@ export default function AdminDashboard() {
                                                 </Avatar>
                                                 <div className="flex flex-col space-y-1">
                                                     <p className="text-sm leading-none">
-                                                        <span className="font-semibold">{laporan.user?.nama || "Unknown User"}</span> mengubah status menjadi <span className="font-medium inline-flex whitespace-nowrap">{laporan.is_overtime ? "Lembur" : "Tepat Waktu"}</span>
+                                                        <span className="font-semibold">{laporan.user?.nama || "Unknown User"}</span> baru saja menambahkan laporan
                                                     </p>
                                                     <p className="text-xs text-muted-foreground pt-1">
                                                         Keterangan: {laporan.deskripsi_hasil || "Tidak ada keterangan"}
