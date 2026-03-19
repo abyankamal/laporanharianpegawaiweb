@@ -65,6 +65,16 @@ export default function PengaturanPage() {
             const hRes = await getHolidays()
             if (hRes.status === "success") {
                 setHolidays(hRes.data)
+            } else if (hRes.message === "User tidak terautentikasi" ||
+                hRes.message === "Role tidak ditemukan" ||
+                hRes.message?.includes("Token tidak valid") ||
+                hRes.message?.includes("kadal") ||
+                (whRes as any).message?.includes("Token tidak valid") ||
+                (whRes as any).message?.includes("kadal")
+            ) {
+                await fetch('/api/auth/logout', { method: 'POST' }).catch(() => { });
+                window.location.href = '/'
+                return;
             }
         } catch (error) {
             console.error("Gagal mengambil pengaturan:", error)

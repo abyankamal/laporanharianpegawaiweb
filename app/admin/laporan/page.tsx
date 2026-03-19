@@ -170,6 +170,15 @@ export default function LaporanRekapPage() {
                 setReports(validatedReports)
                 setTotalPages(response.pagination.total_pages)
                 setTotalData(response.pagination.total_data)
+            } else {
+                if (response.message === "User tidak terautentikasi" ||
+                    response.message === "Role tidak ditemukan" ||
+                    response.message?.includes("Token tidak valid") ||
+                    response.message?.includes("kadal")) {
+                    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => { });
+                    window.location.href = '/'
+                    return;
+                }
             }
         } catch (error) {
             console.error("Error fetching reports:", error)

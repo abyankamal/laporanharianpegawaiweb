@@ -56,6 +56,15 @@ export default function ManajemenJabatanPage() {
                 setJabatans(response.data)
                 setTotalData(response.data.length)
                 setTotalPages(Math.ceil(response.data.length / limit))
+            } else {
+                if (response.message === "User tidak terautentikasi" ||
+                    response.message === "Role tidak ditemukan" ||
+                    response.message?.includes("Token tidak valid") ||
+                    response.message?.includes("kadal")) {
+                    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => { });
+                    window.location.href = '/'
+                    return;
+                }
             }
         } catch (error) {
             console.error("Error fetching jabatans:", error)

@@ -94,6 +94,15 @@ export default function ManajemenPegawaiPage() {
                 setEmployees(response.data.list || [])
                 setTotalData(response.data.pagination?.total_data || 0)
                 setTotalPages(response.data.pagination?.total_pages || 1)
+            } else {
+                if ((response as any).message === "User tidak terautentikasi" ||
+                    (response as any).message === "Role tidak ditemukan" ||
+                    (response as any).message?.includes("Token tidak valid") ||
+                    (response as any).message?.includes("kadal")) {
+                    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => { });
+                    window.location.href = '/'
+                    return;
+                }
             }
         } catch (error) {
             console.error("Error fetching employees:", error)

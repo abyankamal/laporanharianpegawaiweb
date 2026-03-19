@@ -71,6 +71,14 @@ export default function PemantauanTugasPage() {
                 setTotalData(response.data.length)
                 setTotalPages(Math.ceil(response.data.length / limit))
             } else {
+                if (response.message === "User tidak terautentikasi" ||
+                    response.message === "Role tidak ditemukan" ||
+                    response.message?.includes("Token tidak valid") ||
+                    response.message?.includes("kadal")) {
+                    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => { });
+                    window.location.href = '/'
+                    return;
+                }
                 setError(response.message || "Gagal mengambil data tugas")
             }
         } catch (err) {

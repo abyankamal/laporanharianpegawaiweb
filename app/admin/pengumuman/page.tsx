@@ -66,6 +66,14 @@ export default function PusatPengumumanPage() {
                 setTotalPages(response.data.pagination?.total_page || 1)
                 setTotalData(response.data.pagination?.total_data || 0)
             } else {
+                if (response?.message === "User tidak terautentikasi" ||
+                    response?.message === "Role tidak ditemukan" ||
+                    response?.message?.includes("Token tidak valid") ||
+                    response?.message?.includes("kadal")) {
+                    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => { });
+                    window.location.href = '/'
+                    return;
+                }
                 setError(response?.message || "Gagal mengambil data")
             }
         } catch (err: any) {
