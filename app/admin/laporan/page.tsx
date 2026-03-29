@@ -10,11 +10,13 @@ import {
     FileText,
     Filter,
     Search,
-    Eye
+    Eye,
+    Plus
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { DetailLaporanModal } from "@/components/DetailLaporanModal"
+import { CreateReportModal } from "@/components/CreateReportModal"
 import { Input } from "@/components/ui/input"
 import {
     Select,
@@ -59,6 +61,7 @@ export default function LaporanRekapPage() {
     const [search, setSearch] = React.useState("")
     const [debouncedSearch, setDebouncedSearch] = React.useState("")
     const [isDetailModalOpen, setDetailModalOpen] = React.useState(false)
+    const [isCreateModalOpen, setCreateModalOpen] = React.useState(false)
     const [selectedReport, setSelectedReport] = React.useState<Report | null>(null)
     const [fotoUrl, setFotoUrl] = React.useState<string | null>(null)
     const [dokumenUrl, setDokumenUrl] = React.useState<string | null>(null)
@@ -201,17 +204,15 @@ export default function LaporanRekapPage() {
                         <span className="hidden sm:inline">Lampiran</span>
                         <span className="sm:hidden">Lampiran</span>
                     </Button>
-                    <Button
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-                        onClick={() => downloadReportsExcel({
-                            start_date: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
-                            end_date: endDate ? format(endDate, "yyyy-MM-dd") : undefined
-                        })}
-                    >
-                        <Download className="size-4" />
-                        <span className="hidden sm:inline">Export to Excel</span>
-                        <span className="sm:hidden">Excel</span>
-                    </Button>
+                    {userRole === "lurah" && (
+                        <Button
+                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 shadow-md"
+                            onClick={() => setCreateModalOpen(true)}
+                        >
+                            <Plus className="size-4" />
+                            <span>Buat Laporan Baru</span>
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -433,6 +434,14 @@ export default function LaporanRekapPage() {
                 role={userRole}
                 onSuccess={fetchReports}
             />
+
+            {userRole === "lurah" && (
+                <CreateReportModal 
+                    isOpen={isCreateModalOpen}
+                    onClose={() => setCreateModalOpen(false)}
+                    onSuccess={fetchReports}
+                />
+            )}
         </div>
     )
 }

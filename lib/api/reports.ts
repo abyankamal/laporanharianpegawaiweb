@@ -212,3 +212,16 @@ export const downloadAttachments = async (params: { start_date?: string, end_dat
     })
     window.location.href = `/api/admin/reports/export/attachments?${queryParams.toString()}`
 }
+
+export const createReport = async (formData: FormData) => {
+    try {
+        const response = await fetch('/api/admin/reports', {
+            method: 'POST',
+            body: formData,
+        })
+        return await response.json()
+    } catch (error) {
+        console.error("Error in createReport:", error)
+        return { success: false, message: "Gagal menghubungkan ke server untuk membuat laporan" }
+    }
+}
