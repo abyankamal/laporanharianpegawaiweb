@@ -35,20 +35,36 @@ export const getAnnouncements = async (page = 1, limit = 10, search = ""): Promi
     const response = await axios.get("/api/admin/pengumuman", {
         params: { page, limit, search },
     });
-    return response.data;
+    const result = response.data;
+    return {
+        ...result,
+        success: result.success || result.status === "success"
+    };
 };
 
 export const createAnnouncement = async (data: { judul: string; pesan: string; audience: string }): Promise<BaseResponse> => {
     const response = await axios.post("/api/admin/pengumuman", data);
-    return response.data;
+    const result = response.data;
+    return {
+        ...result,
+        success: result.success || result.status === "success"
+    };
 };
 
 export const updateAnnouncement = async (id: number, data: { judul: string; pesan: string; audience: string }): Promise<BaseResponse> => {
     const response = await axios.put(`/api/admin/pengumuman/${id}`, data);
-    return response.data;
+    const result = response.data;
+    return {
+        ...result,
+        success: result.success || result.status === "success"
+    };
 };
 
 export const deleteAnnouncement = async (id: number): Promise<BaseResponse> => {
     const response = await axios.delete(`/api/admin/pengumuman/${id}`);
-    return response.data;
+    const result = response.data;
+    return {
+        ...result,
+        success: result.success || result.status === "success"
+    };
 };

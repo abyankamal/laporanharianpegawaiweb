@@ -57,8 +57,10 @@ export interface DashboardResponse {
 
 // Call the internal Next.js API Route, which acts as a proxy to the backend
 export const getDashboardSummary = async (): Promise<DashboardResponse> => {
-    const response = await axios.get<DashboardResponse>('/api/admin/dashboard/summary', {
-        // Auth headers can be handled within the proxy or using Next.js cookies
-    })
-    return response.data
+    const response = await axios.get('/api/admin/dashboard/summary')
+    const data = response.data
+    return {
+        ...data,
+        success: data.success || data.status === "success"
+    }
 }

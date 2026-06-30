@@ -47,9 +47,13 @@ export interface BaseResponse {
     message: string;
 }
 
-export const getEmployees = async (params?: { search?: string; role?: string; page?: number; limit?: number }) => {
-    const response = await axios.get<EmployeeListResponse>('/api/admin/pegawai', { params });
-    return response.data;
+export const getEmployees = async (params?: { search?: string; role?: string; page?: number; limit?: number }): Promise<EmployeeListResponse> => {
+    const response = await axios.get('/api/admin/pegawai', { params });
+    const data = response.data;
+    return {
+        ...data,
+        success: data.success || data.status === "success"
+    };
 };
 
 export const getJabatans = async () => {
@@ -57,17 +61,29 @@ export const getJabatans = async () => {
     return response.data;
 };
 
-export const createEmployee = async (data: Partial<Employee>) => {
-    const response = await axios.post<BaseResponse>('/api/admin/pegawai', data);
-    return response.data;
+export const createEmployee = async (data: Partial<Employee>): Promise<BaseResponse> => {
+    const response = await axios.post('/api/admin/pegawai', data);
+    const result = response.data;
+    return {
+        ...result,
+        success: result.success || result.status === "success"
+    };
 };
 
-export const updateEmployee = async (id: number, data: Partial<Employee>) => {
-    const response = await axios.put<BaseResponse>(`/api/admin/pegawai/${id}`, data);
-    return response.data;
+export const updateEmployee = async (id: number, data: Partial<Employee>): Promise<BaseResponse> => {
+    const response = await axios.put(`/api/admin/pegawai/${id}`, data);
+    const result = response.data;
+    return {
+        ...result,
+        success: result.success || result.status === "success"
+    };
 };
 
-export const deleteEmployee = async (id: number) => {
-    const response = await axios.delete<BaseResponse>(`/api/admin/pegawai/${id}`);
-    return response.data;
+export const deleteEmployee = async (id: number): Promise<BaseResponse> => {
+    const response = await axios.delete(`/api/admin/pegawai/${id}`);
+    const result = response.data;
+    return {
+        ...result,
+        success: result.success || result.status === "success"
+    };
 };

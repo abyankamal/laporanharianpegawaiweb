@@ -40,8 +40,13 @@ export default function PusatPengumumanPage() {
     const [totalPages, setTotalPages] = React.useState(1)
     const [totalData, setTotalData] = React.useState(0)
     const [isLoading, setIsLoading] = React.useState(true)
-    const [limit] = React.useState(10)
+    const [limit, setLimit] = React.useState(10)
     const [error, setError] = React.useState<string | null>(null)
+
+    const handleLimitChange = (newLimit: number) => {
+        setLimit(newLimit)
+        setCurrentPage(1)
+    }
 
     const [announcements, setAnnouncements] = React.useState<Announcement[]>([])
     const [stats, setStats] = React.useState<AnnouncementStatistik>({
@@ -59,7 +64,7 @@ export default function PusatPengumumanPage() {
         setIsLoading(true)
         setError(null)
         try {
-            const response = await getAnnouncements(currentPage, 10, search)
+            const response = await getAnnouncements(currentPage, limit, search)
             if (response && response.success && response.data) {
                 setAnnouncements(response.data.list || [])
                 setStats(response.data.statistik || { aktif: 0 })
@@ -82,7 +87,7 @@ export default function PusatPengumumanPage() {
         } finally {
             setIsLoading(false)
         }
-    }, [currentPage, search])
+    }, [currentPage, search, limit])
 
     React.useEffect(() => {
         const timeoutId = setTimeout(() => {
@@ -284,6 +289,7 @@ export default function PusatPengumumanPage() {
                     onPageChange={setCurrentPage}
                     totalData={totalData}
                     limit={limit}
+                    onLimitChange={handleLimitChange}
                     itemName="pengumuman"
                 />
             </Card>

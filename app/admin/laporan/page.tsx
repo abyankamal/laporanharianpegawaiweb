@@ -68,10 +68,15 @@ export default function LaporanRekapPage() {
     const [reports, setReports] = React.useState<Report[]>([])
     const [loading, setLoading] = React.useState(false)
     const [currentPage, setCurrentPage] = React.useState(1)
+    const [limit, setLimit] = React.useState(10)
     const [totalPages, setTotalPages] = React.useState(1)
     const [totalData, setTotalData] = React.useState(0)
     const [userRole, setUserRole] = React.useState<string | null>(null)
-    const limit = 10
+
+    const handleLimitChange = (newLimit: number) => {
+        setLimit(newLimit)
+        setCurrentPage(1)
+    }
 
     // Debounce search
     React.useEffect(() => {
@@ -129,7 +134,7 @@ export default function LaporanRekapPage() {
         } finally {
             setLoading(false)
         }
-    }, [startDate, endDate, statusWaktu, statusReview, debouncedSearch, currentPage])
+    }, [startDate, endDate, statusWaktu, statusReview, debouncedSearch, currentPage, limit])
 
     React.useEffect(() => {
         fetchReports()
@@ -421,6 +426,7 @@ export default function LaporanRekapPage() {
                     onPageChange={setCurrentPage}
                     totalData={totalData}
                     limit={limit}
+                    onLimitChange={handleLimitChange}
                     itemName="laporan"
                 />
             </Card>

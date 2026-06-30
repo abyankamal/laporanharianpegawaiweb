@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "laporanharian.suratkasubag.com",
+        hostname: "api.siopik.biz.id",
         pathname: "/**",
       },
       {

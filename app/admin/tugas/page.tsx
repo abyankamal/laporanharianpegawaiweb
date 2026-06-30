@@ -51,7 +51,12 @@ export default function PemantauanTugasPage() {
     const [currentPage, setCurrentPage] = React.useState(1)
     const [totalPages, setTotalPages] = React.useState(1)
     const [totalData, setTotalData] = React.useState(0)
-    const [limit] = React.useState(10)
+    const [limit, setLimit] = React.useState(10)
+
+    const handleLimitChange = (newLimit: number) => {
+        setLimit(newLimit)
+        setCurrentPage(1)
+    }
 
     // Modal State
     const [isFormModalOpen, setIsFormModalOpen] = React.useState(false)
@@ -309,6 +314,7 @@ export default function PemantauanTugasPage() {
                     onPageChange={setCurrentPage}
                     totalData={totalData}
                     limit={limit}
+                    onLimitChange={handleLimitChange}
                     itemName="tugas"
                 />
             </Card>

@@ -110,9 +110,11 @@ export const getRekapLaporan = async (params: {
             }
         })
 
+        const isSuccess = result.success === true || result.status === "success" || result.status === "Success"
+
         return {
-            success: result.success ?? true,
-            message: result.message || "Success",
+            success: isSuccess,
+            message: result.message || (isSuccess ? "Success" : "Gagal mengambil data"),
             data: mappedData,
             pagination: result.pagination || (result.data && result.data.pagination) || {
                 current_page: result.current_page || 1,
@@ -153,7 +155,9 @@ export const getReportDetail = async (id: number) => {
         const response = await fetch(`/api/admin/reports/${id}`)
         const result = await response.json()
 
-        if (!result.success) {
+        const isSuccess = result.success === true || result.status === "success" || result.status === "Success"
+
+        if (!isSuccess) {
             throw new Error(result.message || "Gagal mengambil detail laporan")
         }
 

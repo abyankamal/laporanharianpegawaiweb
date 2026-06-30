@@ -41,7 +41,12 @@ export default function ManajemenJabatanPage() {
     const [currentPage, setCurrentPage] = React.useState(1)
     const [totalPages, setTotalPages] = React.useState(1)
     const [totalData, setTotalData] = React.useState(0)
-    const [limit] = React.useState(10)
+    const [limit, setLimit] = React.useState(10)
+
+    const handleLimitChange = (newLimit: number) => {
+        setLimit(newLimit)
+        setCurrentPage(1)
+    }
 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false)
     const [selectedJabatan, setSelectedJabatan] = React.useState<Jabatan | null>(null)
@@ -241,6 +246,7 @@ export default function ManajemenJabatanPage() {
                     onPageChange={setCurrentPage}
                     totalData={totalData}
                     limit={limit}
+                    onLimitChange={handleLimitChange}
                     itemName="jabatan"
                 />
             </Card>

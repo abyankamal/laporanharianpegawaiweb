@@ -64,9 +64,9 @@ export default function LoginPage() {
       <main className="relative z-10 w-full max-w-5xl bg-white/40 backdrop-blur-xl border border-white/50 shadow-2xl rounded-3xl overflow-hidden flex flex-col lg:flex-row">
 
         {/* Left Column - Branding */}
-        <div className="lg:w-1/2 p-10 lg:p-12 relative flex flex-col justify-between overflow-hidden">
+        <div className="hidden lg:flex lg:w-1/2 p-10 lg:p-12 relative flex-col justify-between overflow-hidden lg:rounded-l-3xl">
           {/* Background overlay for left column to ensure text readability */}
-          <div className="absolute inset-0 bg-blue-900/70 backdrop-blur-md z-0" />
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-900 to-indigo-950 z-0 lg:rounded-l-3xl" />
 
           <div className="relative z-10 flex flex-col h-full">
             {/* Logo & Brand */}
@@ -96,9 +96,23 @@ export default function LoginPage() {
         </div>
 
         {/* Right Column - Login Form */}
-        <div className="lg:w-1/2 p-10 lg:p-12 flex flex-col justify-center bg-white/20">
+        <div className="w-full lg:w-1/2 p-6 sm:p-10 lg:p-12 flex flex-col justify-center bg-white/20 rounded-3xl lg:rounded-none lg:rounded-r-3xl">
           <div className="w-full max-w-sm mx-auto">
-            <div className="mb-8">
+            {/* Mobile Branding (only visible on mobile) */}
+            <div className="flex lg:hidden items-center justify-center gap-3 mb-8">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600/10 border border-blue-600/20 backdrop-blur-sm shadow-sm overflow-hidden p-2">
+                <Image
+                  src="/logo.png"
+                  alt="SIOPIK Logo"
+                  width={32}
+                  height={32}
+                  className="object-contain"
+                />
+              </div>
+              <span className="text-2xl font-bold tracking-tight text-blue-900 uppercase">SIOPIK</span>
+            </div>
+
+            <div className="mb-8 text-center lg:text-left">
               <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Selamat Datang Kembali</h2>
               <p className="text-slate-600 mt-2 text-sm">
                 Silakan masuk ke akun Anda untuk melanjutkan akses panel admin.

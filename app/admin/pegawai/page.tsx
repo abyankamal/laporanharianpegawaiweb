@@ -60,7 +60,12 @@ export default function ManajemenPegawaiPage() {
     const [currentPage, setCurrentPage] = React.useState(1)
     const [totalPages, setTotalPages] = React.useState(1)
     const [searchTerm, setSearchTerm] = React.useState("")
-    const [limit] = React.useState(10)
+    const [limit, setLimit] = React.useState(10)
+
+    const handleLimitChange = (newLimit: number) => {
+        setLimit(newLimit)
+        setCurrentPage(1)
+    }
 
     // Form Modal States
     const [isFormModalOpen, setIsFormModalOpen] = React.useState(false)
@@ -315,6 +320,7 @@ export default function ManajemenPegawaiPage() {
                     onPageChange={setCurrentPage}
                     totalData={totalData}
                     limit={limit}
+                    onLimitChange={handleLimitChange}
                     itemName="pegawai"
                 />
             </Card>

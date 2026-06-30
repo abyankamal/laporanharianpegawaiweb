@@ -33,26 +33,42 @@ export interface BaseResponse {
     message: string;
 }
 
-export const getTasks = async () => {
-    const response = await axios.get<TaskListResponse>('/api/admin/tasks');
-    return response.data;
+export const getTasks = async (): Promise<TaskListResponse> => {
+    const response = await axios.get('/api/admin/tasks');
+    const result = response.data;
+    return {
+        ...result,
+        success: result.success || result.status === "success"
+    };
 };
 
-export const createTask = async (formData: FormData) => {
-    const response = await axios.post<TaskDetailResponse>('/api/admin/tasks', formData, {
+export const createTask = async (formData: FormData): Promise<TaskDetailResponse> => {
+    const response = await axios.post('/api/admin/tasks', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     });
-    return response.data;
+    const result = response.data;
+    return {
+        ...result,
+        success: result.success || result.status === "success"
+    };
 };
 
-export const updateTask = async (id: number, formData: FormData) => {
-    const response = await axios.put<TaskDetailResponse>(`/api/admin/tasks/${id}`, formData, {
+export const updateTask = async (id: number, formData: FormData): Promise<TaskDetailResponse> => {
+    const response = await axios.put(`/api/admin/tasks/${id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     });
-    return response.data;
+    const result = response.data;
+    return {
+        ...result,
+        success: result.success || result.status === "success"
+    };
 };
 
-export const deleteTask = async (id: number) => {
-    const response = await axios.delete<BaseResponse>(`/api/admin/tasks/${id}`);
-    return response.data;
+export const deleteTask = async (id: number): Promise<BaseResponse> => {
+    const response = await axios.delete(`/api/admin/tasks/${id}`);
+    const result = response.data;
+    return {
+        ...result,
+        success: result.success || result.status === "success"
+    };
 };

@@ -80,13 +80,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild className="hover:bg-primary/5 transition-colors">
                             <Link href="/admin">
-                                <div className="flex aspect-square size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-sm">
+                                <div className="flex aspect-square size-10 items-center justify-center rounded-xl text-primary-foreground">
                                     <Image
                                         src="/logo.png"
                                         alt="SIOPIK Logo"
                                         width={28}
                                         height={28}
-                                        className="drop-shadow-sm"
                                     />
                                 </div>
                                 <div className="grid flex-1 text-left text-sm leading-tight ml-1">

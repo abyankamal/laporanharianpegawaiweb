@@ -14,19 +14,31 @@ export async function POST(req: NextRequest) {
 
         const data = await response.json()
 
-        if (data.status === "success" && data.token) {
+        if (data.status === "success" && data.data && data.data.access_token) {
             const nextResponse = NextResponse.json(data)
 
             // Set HTTP-only cookie for server-side auth (proxy) and security
             nextResponse.cookies.set({
                 name: "admin_token",
-                value: data.token,
+                value: data.data.access_token,
                 httpOnly: true,
                 secure: process.env.NODE_ENV === "production",
                 sameSite: "lax",
                 path: "/",
                 maxAge: 60 * 60 * 24 * 7, // 7 days
             })
+
+            if (data.data.refresh_token) {
+                nextResponse.cookies.set({
+                    name: "refresh_token",
+                    value: data.data.refresh_token,
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === "production",
+                    sameSite: "lax",
+                    path: "/",
+                    maxAge: 60 * 60 * 24 * 30, // 30 days
+                })
+            }
 
             return nextResponse
         }
