@@ -49,6 +49,10 @@ function AdminHeader() {
             case 'admin': return 'Dashboard';
             case 'pegawai': return 'Data Pegawai';
             case 'jabatan': return 'Data Jabatan';
+            case 'absensi':
+            case 'attendance': return 'Rekap Absensi';
+            case 'izin':
+            case 'leaves': return 'Izin & Cuti';
             case 'tugas': return 'Pemantauan Tugas';
             case 'pengumuman': return 'Pusat Pengumuman';
             case 'laporan': return 'Rekap Laporan';

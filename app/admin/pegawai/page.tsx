@@ -7,16 +7,17 @@ import {
     Plus,
     Pencil,
     Trash2,
-    ChevronLeft,
-    ChevronRight,
     Users,
-    Check
+    Check,
+    KeyRound,
+    Building2,
+    ShieldCheck,
+    UserCheck,
+    Briefcase,
+    Sparkles
 } from "lucide-react"
 
 import { CustomPagination } from "@/components/CustomPagination"
-
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
     Table,
     TableBody,
@@ -26,7 +27,6 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
     DropdownMenu,
@@ -41,6 +41,7 @@ import { cn } from "@/lib/utils"
 
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal"
 import { FormPegawaiModal, PegawaiData } from "@/components/FormPegawaiModal"
+import { ResetPasswordModal } from "@/components/ResetPasswordModal"
 
 import {
     getEmployees,
@@ -70,6 +71,8 @@ export default function ManajemenPegawaiPage() {
     // Form Modal States
     const [isFormModalOpen, setIsFormModalOpen] = React.useState(false)
     const [formModeData, setFormModeData] = React.useState<any | null>(null)
+    const [isResetModalOpen, setIsResetModalOpen] = React.useState(false)
+    const [selectedResetPegawai, setSelectedResetPegawai] = React.useState<Employee | null>(null)
 
     const [selectedRole, setSelectedRole] = React.useState<string>("Semua")
     const [debouncedSearch, setDebouncedSearch] = React.useState("")
@@ -78,7 +81,7 @@ export default function ManajemenPegawaiPage() {
     React.useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearch(searchTerm)
-        }, 500)
+        }, 400)
         return () => clearTimeout(timer)
     }, [searchTerm])
 
@@ -92,7 +95,6 @@ export default function ManajemenPegawaiPage() {
                 page: currentPage,
                 limit
             })
-            // Support both 'success' boolean and 'status === "success"'
             const isSuccess = response.success || (response as any).status === "success"
 
             if (isSuccess && response.data) {
@@ -100,10 +102,12 @@ export default function ManajemenPegawaiPage() {
                 setTotalData(response.data.pagination?.total_data || 0)
                 setTotalPages(response.data.pagination?.total_pages || 1)
             } else {
-                if ((response as any).message === "User tidak terautentikasi" ||
+                if (
+                    (response as any).message === "User tidak terautentikasi" ||
                     (response as any).message === "Role tidak ditemukan" ||
                     (response as any).message?.includes("Token tidak valid") ||
-                    (response as any).message?.includes("kadal")) {
+                    (response as any).message?.includes("kadal")
+                ) {
                     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => { });
                     window.location.href = '/'
                     return;
@@ -115,7 +119,7 @@ export default function ManajemenPegawaiPage() {
         } finally {
             setLoading(false)
         }
-    }, [debouncedSearch, selectedRole, currentPage, limit, toast])
+    }, [debouncedSearch, selectedRole, currentPage, limit])
 
     React.useEffect(() => {
         fetchEmployees()
@@ -138,6 +142,7 @@ export default function ManajemenPegawaiPage() {
             nama: item.nama,
             jabatan: item.jabatan?.nama_jabatan || "",
             jabatan_id: item.jabatan_id,
+            kategori_pegawai_id: item.kategori_pegawai_id || item.kategori_pegawai?.id,
             role: item.role,
         })
         setIsFormModalOpen(true)
@@ -145,13 +150,12 @@ export default function ManajemenPegawaiPage() {
 
     const handleSavePegawai = async (data: any) => {
         try {
-            // Map frontend data to backend structure
-            // Backend expects 'role' and 'jabatan_id' (uint)
             const payload = {
                 nip: data.nip,
                 nama: data.nama,
                 role: data.role.toLowerCase(),
                 jabatan_id: data.jabatan_id ? Number(data.jabatan_id) : undefined,
+                kategori_pegawai_id: data.kategori_pegawai_id ? Number(data.kategori_pegawai_id) : undefined,
                 password: data.password || undefined
             }
 
@@ -181,165 +185,276 @@ export default function ManajemenPegawaiPage() {
             toast.success("Data pegawai berhasil dihapus")
             setIsDeleteModalOpen(false)
             fetchEmployees()
-        } catch (error) {
+        } catch {
             toast.error("Gagal menghapus data pegawai")
         }
     }
 
+    const renderKategoriBadge = (item: Employee) => {
+        const namaKategori = item.kategori_pegawai?.nama_kategori || (
+            item.kategori_pegawai_id === 1 ? "PNS" :
+            item.kategori_pegawai_id === 2 ? "PPPK Penuh Waktu" :
+            item.kategori_pegawai_id === 3 ? "PPPK Paruh Waktu" : ""
+        );
+        const kode = item.kategori_pegawai?.kode_kategori || (
+            item.kategori_pegawai_id === 1 ? "pns" :
+            item.kategori_pegawai_id === 2 ? "p3k_penuh" :
+            item.kategori_pegawai_id === 3 ? "p3k_paruh" : ""
+        );
+
+        if (kode === "pns") {
+            return <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 inline-block">{namaKategori}</span>;
+        } else if (kode === "p3k_penuh") {
+            return <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 inline-block">{namaKategori}</span>;
+        } else if (kode === "p3k_paruh") {
+            return <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 inline-block">{namaKategori}</span>;
+        }
+        return <span className="text-slate-400 font-mono text-xs">{namaKategori || "-"}</span>;
+    };
+
+    const renderRoleBadge = (role: string) => {
+        const r = (role || "").toLowerCase()
+        if (r === "lurah") {
+            return <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 inline-block">Lurah</span>
+        } else if (r === "sekertaris") {
+            return <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 inline-block">Sekretaris</span>
+        } else if (r === "kasi") {
+            return <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 inline-block">Kasi</span>
+        }
+        return <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 inline-block">Staf</span>
+    }
+
+    const getInitials = (name: string) => {
+        if (!name) return "??"
+        return name
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .substring(0, 2)
+            .toUpperCase()
+    }
+
     return (
-        <div className="flex flex-col gap-6 p-1">
-            {/* Header & Baris Aksi */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <div className="space-y-1">
-                    <h1 className="text-2xl font-bold tracking-tight">Manajemen Pegawai</h1>
-                    <p className="text-muted-foreground text-sm">
-                        Kelola data, struktur organisasi, dan status kepegawaian perangkat desa SIOPIK.
+        <div className="flex flex-col gap-8 max-w-7xl mx-auto p-1 sm:p-2 selection:bg-blue-600 selection:text-white">
+            
+            {/* Header: Eyebrow + Title + Add Button */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-4 border-b border-slate-200/80">
+                <div className="space-y-2">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-[11px] font-semibold text-slate-700">
+                        <Building2 className="size-3.5 text-slate-500" />
+                        <span>Basis Data Aparatur Sipil</span>
+                        <span className="text-slate-400">•</span>
+                        <span className="font-mono text-slate-600">Kelurahan Sukanegla</span>
+                    </div>
+
+                    <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 leading-none">
+                        Manajemen Pegawai
+                    </h1>
+                    <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+                        Pengelolaan akun pegawai, hak akses hierarki, pemetaan jabatan, dan kategori kepegawaian SIOPIK.
                     </p>
                 </div>
-                <div className="flex flex-col sm:flex-row items-center gap-2">
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <div className="flex items-center w-full sm:w-72 md:w-80 h-10 border border-input rounded-lg bg-background px-3 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
-                            <Search className="size-4 text-muted-foreground shrink-0" />
-                            <input
-                                className="flex h-full w-full bg-transparent px-3 py-1 text-sm outline-none placeholder:text-muted-foreground"
-                                placeholder="Cari nama, NIP, atau jabatan..."
-                                value={searchTerm}
-                                onChange={handleSearch}
-                            />
-                        </div>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" className="h-10 flex items-center gap-2 shrink-0">
-                                    <Filter className="size-4" />
-                                    <span>{selectedRole === "Semua" ? "Filter Role" : selectedRole}</span>
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
-                                <DropdownMenuLabel>Filter berdasarkan Role</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                {["Semua", "Lurah", "Sekertaris", "Kasi", "Staf"].map((role) => (
-                                    <DropdownMenuCheckboxItem
-                                        key={role}
-                                        checked={selectedRole === (role === "Sekertaris" ? "Sekretaris" : role)}
-                                        onCheckedChange={() => {
-                                            setSelectedRole(role === "Sekertaris" ? "Sekretaris" : role)
-                                            setCurrentPage(1)
-                                        }}
-                                    >
-                                        {role === "Sekertaris" ? "Sekretaris" : role}
-                                    </DropdownMenuCheckboxItem>
-                                ))}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                    <Button
-                        className="w-full sm:w-auto h-10 flex items-center gap-2 shrink-0 bg-blue-600 hover:bg-blue-700"
+
+                {/* Island Actions (Add Employee Button) */}
+                <div className="flex items-center gap-2.5">
+                    <button
                         onClick={handleAddPegawaiClick}
+                        className="group inline-flex items-center gap-3 pl-5 pr-2 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-md text-xs font-bold transition-all duration-300 active:scale-[0.98] cursor-pointer"
                     >
-                        <Plus className="size-4" />
                         <span>Tambah Pegawai</span>
-                    </Button>
+                        <div className="size-6 rounded-full bg-white/15 flex items-center justify-center transition-all duration-300 group-hover:rotate-90 group-hover:bg-white/25">
+                            <Plus className="size-3.5" />
+                        </div>
+                    </button>
                 </div>
             </div>
 
-            {/* Tabel Data Pegawai */}
-            <Card className="shadow-sm border-muted-foreground/10 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader className="bg-muted/50">
-                            <TableRow>
-                                <TableHead className="w-[80px] text-center">FOTO</TableHead>
-                                <TableHead className="min-w-[200px]">NAMA LENGKAP</TableHead>
-                                <TableHead className="min-w-[180px]">NIP</TableHead>
-                                <TableHead className="min-w-[180px]">JABATAN</TableHead>
-                                <TableHead className="text-right min-w-[100px]">AKSI</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {loading ? (
+            {/* Filter Bar: Role Pills + Search Box */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                {/* Role Filter Pills */}
+                <div className="p-1 rounded-full bg-slate-100 border border-slate-200 flex items-center gap-1 flex-wrap">
+                    {["Semua", "Lurah", "Sekretaris", "Kasi", "Staf"].map((role) => (
+                        <button
+                            key={role}
+                            onClick={() => {
+                                setSelectedRole(role)
+                                setCurrentPage(1)
+                            }}
+                            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                                selectedRole === role
+                                    ? "bg-white text-slate-900 shadow-sm"
+                                    : "text-slate-500 hover:text-slate-800"
+                            }`}
+                        >
+                            {role}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Search Bar */}
+                <div className="relative w-full sm:w-80">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                    <input
+                        className="w-full h-10 pl-10 pr-4 bg-white rounded-full border border-slate-200 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 shadow-sm transition-all"
+                        placeholder="Cari nama, NIP, atau jabatan..."
+                        value={searchTerm}
+                        onChange={handleSearch}
+                    />
+                </div>
+            </div>
+
+            {/* Main Table: Double-Bezel Hardware Architecture */}
+            <div className="rounded-[2rem] bg-slate-100/90 border border-slate-200/90 p-2 shadow-sm">
+                <div className="rounded-[calc(2rem-0.5rem)] bg-white overflow-hidden shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
+                    
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader className="bg-slate-50/80 border-b border-slate-100">
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-10">
-                                        Memuat data...
-                                    </TableCell>
+                                    <TableHead className="w-12 text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">NO</TableHead>
+                                    <TableHead className="min-w-[220px] text-[11px] font-bold uppercase tracking-wider text-slate-500">PEGAWAI</TableHead>
+                                    <TableHead className="min-w-[150px] text-[11px] font-bold uppercase tracking-wider text-slate-500">NIP</TableHead>
+                                    <TableHead className="min-w-[180px] text-[11px] font-bold uppercase tracking-wider text-slate-500">JABATAN</TableHead>
+                                    <TableHead className="min-w-[140px] text-[11px] font-bold uppercase tracking-wider text-slate-500">KATEGORI</TableHead>
+                                    <TableHead className="text-center min-w-[100px] text-[11px] font-bold uppercase tracking-wider text-slate-500">HAK AKSES</TableHead>
+                                    <TableHead className="text-right min-w-[120px] text-[11px] font-bold uppercase tracking-wider text-slate-500">AKSI</TableHead>
                                 </TableRow>
-                            ) : (employees?.length || 0) === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-10">
-                                        Tidak ada data pegawai.
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                employees?.map((item) => (
-                                    <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
-                                        <TableCell className="text-center">
-                                            <Avatar className="size-8 mx-auto border-2 border-background shadow-sm">
-                                                <AvatarImage src={item.foto_path ? `/${item.foto_path}` : ""} alt={item.nama} />
-                                                <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                                                    {item.nama.substring(0, 2).toUpperCase()}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                        </TableCell>
-                                        <TableCell className="font-semibold text-sm">
-                                            {item.nama}
-                                        </TableCell>
-                                        <TableCell className="font-mono text-sm text-muted-foreground">
-                                            {item.nip}
-                                        </TableCell>
-                                        <TableCell className="text-sm">
-                                            {item.jabatan?.nama_jabatan || "-"}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex items-center justify-end gap-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="size-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                                    onClick={() => handleEditPegawaiClick(item)}
-                                                >
-                                                    <Pencil className="size-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="size-8 text-muted-foreground hover:text-red-600 hover:bg-red-50"
-                                                    onClick={() => handleDeleteClick(item)}
-                                                >
-                                                    <Trash2 className="size-4" />
-                                                </Button>
+                            </TableHeader>
+                            <TableBody className="divide-y divide-slate-100">
+                                {loading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={7} className="h-32 text-center">
+                                            <div className="flex flex-col items-center justify-center gap-2">
+                                                <div className="size-6 animate-spin rounded-full border-2 border-slate-300 border-t-blue-700" />
+                                                <span className="text-xs font-semibold text-slate-500">Memuat data pegawai...</span>
                                             </div>
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
+                                ) : employees.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={7} className="h-32 text-center text-slate-400">
+                                            <div className="space-y-1">
+                                                <Users className="size-6 mx-auto opacity-30" />
+                                                <p className="text-xs font-medium">Tidak ada data pegawai yang cocok.</p>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    employees.map((item, index) => (
+                                        <TableRow key={item.id} className="hover:bg-slate-50/60 transition-colors group">
+                                            {/* No */}
+                                            <TableCell className="text-center text-xs font-mono text-slate-400">
+                                                {(currentPage - 1) * limit + index + 1}
+                                            </TableCell>
+
+                                            {/* Pegawai */}
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="size-9 rounded-2xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center text-xs font-bold font-mono shrink-0">
+                                                        {getInitials(item.nama)}
+                                                    </div>
+                                                    <div className="overflow-hidden">
+                                                        <span className="text-xs font-bold text-slate-900 block truncate">{item.nama}</span>
+                                                        <span className="text-[10px] text-slate-400 font-mono block truncate">
+                                                            ID: #{item.id}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+
+                                            {/* NIP */}
+                                            <TableCell className="font-mono text-xs text-slate-600 font-medium">
+                                                {item.nip}
+                                            </TableCell>
+
+                                            {/* Jabatan */}
+                                            <TableCell className="text-xs text-slate-700 font-semibold">
+                                                {item.jabatan?.nama_jabatan || "-"}
+                                            </TableCell>
+
+                                            {/* Kategori Pegawai */}
+                                            <TableCell>
+                                                {renderKategoriBadge(item)}
+                                            </TableCell>
+
+                                            {/* Hak Akses Role */}
+                                            <TableCell className="text-center">
+                                                {renderRoleBadge(item.role)}
+                                            </TableCell>
+
+                                            {/* Aksi */}
+                                            <TableCell className="text-right">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedResetPegawai(item)
+                                                            setIsResetModalOpen(true)
+                                                        }}
+                                                        className="size-8 rounded-xl bg-slate-100 hover:bg-amber-50 text-slate-600 hover:text-amber-700 inline-flex items-center justify-center transition-colors cursor-pointer"
+                                                        title="Reset Password"
+                                                    >
+                                                        <KeyRound className="size-3.5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleEditPegawaiClick(item)}
+                                                        className="size-8 rounded-xl bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-700 inline-flex items-center justify-center transition-colors cursor-pointer"
+                                                        title="Edit Pegawai"
+                                                    >
+                                                        <Pencil className="size-3.5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteClick(item)}
+                                                        className="size-8 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 inline-flex items-center justify-center transition-colors cursor-pointer"
+                                                        title="Hapus Pegawai"
+                                                    >
+                                                        <Trash2 className="size-3.5" />
+                                                    </button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+
+                    {/* Pagination Bar */}
+                    <div className="p-4 border-t border-slate-100">
+                        <CustomPagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                            totalData={totalData}
+                            limit={limit}
+                            onLimitChange={handleLimitChange}
+                            itemName="pegawai"
+                        />
+                    </div>
+
                 </div>
-                <CustomPagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                    totalData={totalData}
-                    limit={limit}
-                    onLimitChange={handleLimitChange}
-                    itemName="pegawai"
-                />
-            </Card>
+            </div>
 
-            {/* Integasi Modal Hapus */}
-            <DeleteConfirmModal
-                isOpen={isDeleteModalOpen}
-                onClose={() => setIsDeleteModalOpen(false)}
-                onConfirm={handleConfirmDelete}
-                itemName={selectedPegawai?.nama || ""}
-            />
-
-            {/* Modal Form Tambah/Edit Pegawai */}
+            {/* Modals */}
             <FormPegawaiModal
                 isOpen={isFormModalOpen}
                 onClose={() => setIsFormModalOpen(false)}
                 pegawaiData={formModeData}
                 onSave={handleSavePegawai}
             />
+
+            <ResetPasswordModal
+                isOpen={isResetModalOpen}
+                onClose={() => setIsResetModalOpen(false)}
+                employee={selectedResetPegawai}
+            />
+
+            <DeleteConfirmModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                itemName={selectedPegawai?.nama || "Pegawai"}
+            />
+
         </div>
     )
 }

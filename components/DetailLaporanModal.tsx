@@ -2,7 +2,23 @@
 
 import * as React from "react"
 import Image from "next/image"
-import { X, Calendar, Clock, FileText, CheckSquare, Image as ImageIcon, ExternalLink, MessageSquare, Send } from "lucide-react"
+import {
+    X,
+    Calendar,
+    Clock,
+    FileText,
+    CheckSquare,
+    Image as ImageIcon,
+    ExternalLink,
+    MessageSquare,
+    Send,
+    ZoomIn,
+    MapPin,
+    ShieldCheck,
+    CheckCircle2,
+    Building2,
+    FileCheck
+} from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -13,13 +29,10 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { Report, evaluateReport } from "@/lib/api/reports"
 import { Textarea } from "@/components/ui/textarea"
-
-// Interface LaporanData dihapus karena kita menggunakan Report dari lib/api/reports.ts
 
 interface DetailLaporanModalProps {
     report: Report | null
@@ -43,6 +56,7 @@ export function DetailLaporanModal({
     const [imgSrc, setImgSrc] = React.useState<string | null>(null)
     const [comment, setComment] = React.useState("")
     const [isSubmitting, setIsSubmitting] = React.useState(false)
+    const [isImagePreviewOpen, setIsImagePreviewOpen] = React.useState(false)
 
     React.useEffect(() => {
         if (report?.komentar_atasan) {
@@ -64,284 +78,284 @@ export function DetailLaporanModal({
 
     const fallbackUrl = "https://images.unsplash.com/photo-1573163231162-717dfc3e4146?q=80&w=800"
 
+    const getInitials = (name: string) => {
+        if (!name) return "??"
+        return name
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .substring(0, 2)
+            .toUpperCase()
+    }
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-                <DialogHeader className="flex flex-row items-center gap-2 border-b pb-4">
-                    <div className="flex size-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
-                        <FileText className="size-6" />
-                    </div>
-                    <DialogTitle className="text-xl font-bold">Detail Laporan Kinerja</DialogTitle>
-                </DialogHeader>
-
-                <div className="flex flex-col gap-6 py-4">
-                    {/* Profil Pegawai Card */}
-                    <div className="relative flex items-center gap-4 rounded-xl border bg-muted/30 p-4">
-                        <div className="relative">
-                            <Avatar className="h-16 w-16 border-2 border-background shadow-sm">
-                                <AvatarImage src={`/avatars/${report.nip}.png`} alt={report.nama} />
-                                <AvatarFallback className="bg-primary text-primary-foreground text-xl">
-                                    {report.nama.substring(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                            </Avatar>
-                            <span className="absolute bottom-1 right-1 size-3.5 rounded-full border-2 border-background bg-green-500 shadow-sm" />
-                        </div>
-                        <div className="flex flex-col">
-                            <div className="flex items-center gap-2">
-                                <h3 className="text-lg font-bold leading-none">{report.nama}</h3>
-                                {report.owner_role && (
-                                    <Badge variant="outline" className="text-[10px] h-4 px-1.5 font-bold uppercase tracking-tight bg-slate-100 text-slate-600 border-none">
-                                        {report.owner_role}
-                                    </Badge>
-                                )}
-                            </div>
-                            <p className="mt-1 text-sm font-semibold text-blue-600 dark:text-blue-400 leading-none">
-                                {report.jabatan}
-                            </p>
-                            <p className="mt-1.5 text-xs font-medium text-muted-foreground/80 font-mono">
-                                NIP: {report.nip}
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Grid Informasi Waktu & Status */}
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                        <div className="space-y-1.5">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
-                                Tanggal Laporan
-                            </span>
-                            <div className="flex items-center gap-2 text-sm font-semibold">
-                                <Calendar className="size-4 text-muted-foreground" />
-                                {report.tanggal}
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
-                                Jam Lapor
-                            </span>
-                            <div className="flex items-center gap-2 text-sm font-semibold">
-                                <Clock className="size-4 text-muted-foreground" />
-                                {report.jam_lapor} WIB
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
-                                Tipe Tugas
-                            </span>
-                            <div className="flex items-center gap-2 text-sm font-semibold text-blue-600 dark:text-blue-400">
-                                <FileText className="size-4" />
-                                {report.jenis_tugas || "Tugas Individu"}
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
-                                Status Waktu
-                            </span>
-                            <div>
-                                <Badge
-                                    className={cn(
-                                        "px-2.5 py-0.5 font-bold border-transparent",
-                                        report.status_waktu === "Tepat Waktu"
-                                            ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400"
-                                            : "bg-amber-100 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400"
-                                    )}
-                                >
-                                    {report.status_waktu}
-                                </Badge>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Bagian Deskripsi Tugas */}
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <h4 className="flex items-center gap-2 text-sm font-bold text-foreground">
-                                <CheckSquare className="size-4 text-blue-600" />
-                                Rincian Kegiatan
-                            </h4>
-                            <Badge
-                                variant="outline"
-                                className={cn(
-                                    "px-2.5 py-0.5 font-bold flex items-center gap-1.5 w-fit border-transparent",
-                                    report.status_review === "Disetujui"
-                                        ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
-                                        : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                                )}
-                            >
-                                <span className={cn(
-                                    "size-2 rounded-full",
-                                    report.status_review === "Disetujui" ? "bg-blue-600" : "bg-slate-400"
-                                )} />
-                                {report.status_review}
-                            </Badge>
-                        </div>
-                        <div className="rounded-xl bg-slate-50 p-4 border border-slate-100 dark:bg-slate-900/40 dark:border-slate-800/60">
-                            <h5 className="text-sm font-bold mb-2 text-blue-700 dark:text-blue-400">{report.laporan}</h5>
-                            <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap italic">
-                                "{report.deskripsi || "Tidak ada deskripsi rinci"}"
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Lokasi (Jika Ada) */}
-                    {report.lokasi && (
-                        <div className="space-y-3">
-                            <h4 className="flex items-center gap-2 text-sm font-bold text-foreground">
-                                <div className="size-4 rounded-full bg-red-100 flex items-center justify-center">
-                                    <div className="size-1.5 rounded-full bg-red-600" />
+            <DialogContent className="sm:max-w-[650px] max-h-[92vh] overflow-y-auto rounded-[2rem] p-0 border-0 bg-transparent shadow-2xl">
+                {/* Double-Bezel Nested Hardware Shell */}
+                <div className="rounded-[2rem] bg-slate-100/95 border border-slate-200/90 p-2">
+                    <div className="rounded-[calc(2rem-0.5rem)] bg-white overflow-hidden shadow-sm flex flex-col">
+                        
+                        {/* Modal Header */}
+                        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                            <div className="flex items-center gap-3">
+                                <div className="size-9 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center font-bold">
+                                    <FileCheck className="size-4" />
                                 </div>
-                                Lokasi Pelaporan
-                            </h4>
-                            <div className="px-4 py-3 bg-red-50/30 border border-red-100 rounded-lg dark:bg-red-950/10 dark:border-red-900/20">
-                                <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 leading-relaxed">
-                                    {report.lokasi}
-                                </p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Komentar Atasan (Jika Ada) */}
-                    {report.komentar_atasan?.trim() && (
-                        <div className="space-y-3">
-                            <h4 className="flex items-center gap-2 text-sm font-bold text-foreground">
-                                <FileText className="size-4 text-emerald-600" />
-                                Catatan / Masukan Atasan
-                            </h4>
-                            <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl dark:bg-emerald-950/20 dark:border-emerald-900/30">
-                                <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300 italic">
-                                    "{report.komentar_atasan}"
-                                </p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Grid Lampiran (Foto & Dokumen) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Bagian Foto Bukti */}
-                        <div className="space-y-3">
-                            <h4 className="flex items-center gap-2 text-sm font-bold text-foreground">
-                                <ImageIcon className="size-4 text-blue-600" />
-                                Foto Bukti
-                            </h4>
-                            <div className="relative aspect-[4/3] overflow-hidden rounded-xl border shadow-sm bg-muted flex items-center justify-center">
-                                {imgSrc ? (
-                                    <Image
-                                        src={imgSrc}
-                                        alt="Bukti Kerja"
-                                        fill
-                                        className="object-cover transition-transform hover:scale-105 duration-500"
-                                        sizes="(max-width: 600px) 100vw, 300px"
-                                        onError={() => {
-                                            if (imgSrc !== fallbackUrl) {
-                                                setImgSrc(fallbackUrl)
-                                            }
-                                        }}
-                                    />
-                                ) : (
-                                    <div className="flex flex-col items-center gap-2 text-muted-foreground/60 p-4">
-                                        <ImageIcon className="size-8" />
-                                        <span className="text-[10px] font-medium">Tidak ada foto</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Bagian Dokumen Lampiran */}
-                        <div className="space-y-3">
-                            <h4 className="flex items-center gap-2 text-sm font-bold text-foreground">
-                                <FileText className="size-4 text-blue-600" />
-                                Dokumen
-                            </h4>
-                            {dokumenUrl ? (
-                                <div className="h-full min-h-[150px] p-4 bg-muted/30 rounded-xl border border-dashed border-muted-foreground/20 flex flex-col items-center justify-center gap-3">
-                                    <div className="size-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                                        <FileText className="size-5" />
-                                    </div>
-                                    <p className="text-[10px] text-muted-foreground text-center line-clamp-2 px-2">
-                                        Lampiran dokumen tersedia
+                                <div>
+                                    <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
+                                        Rincian Laporan Kinerja
+                                    </h3>
+                                    <p className="text-[11px] text-slate-500 font-medium">
+                                        Dokumen verifikasi kegiatan kerja aparatur kelurahan
                                     </p>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="w-full text-[10px] h-7 gap-1.5 bg-background shadow-sm"
-                                        onClick={() => window.open(dokumenUrl, '_blank')}
-                                    >
-                                        <ExternalLink className="size-3" />
-                                        <span>Buka</span>
-                                    </Button>
                                 </div>
-                            ) : (
-                                <div className="h-full min-h-[150px] p-4 bg-slate-50 border border-slate-100 rounded-xl dark:bg-slate-900/20 dark:border-slate-800 flex flex-col items-center justify-center gap-2 text-muted-foreground/40">
-                                    <FileText className="size-8 opacity-20" />
-                                    <span className="text-[10px] font-medium">Tidak ada dokumen</span>
+                            </div>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div className="p-6 space-y-6 text-slate-900">
+                            
+                            {/* 1. Profil Pegawai (Nested Squircle Card) */}
+                            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center gap-4">
+                                <div className="size-12 rounded-2xl bg-blue-700 text-white flex items-center justify-center text-sm font-bold font-mono shrink-0 shadow-sm">
+                                    {getInitials(report.nama)}
+                                </div>
+                                <div className="overflow-hidden space-y-0.5">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <h4 className="text-sm font-bold text-slate-900 truncate">{report.nama}</h4>
+                                        {report.owner_role && (
+                                            <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">
+                                                {report.owner_role}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-xs font-semibold text-blue-700 font-mono truncate">{report.jabatan}</p>
+                                    <p className="text-[11px] text-slate-400 font-mono">NIP: {report.nip}</p>
+                                </div>
+                            </div>
+
+                            {/* 2. Grid Metadata Waktu & Status */}
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                <div className="p-3 rounded-xl bg-slate-50/70 border border-slate-200/70 space-y-0.5">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tanggal</span>
+                                    <p className="text-xs font-bold text-slate-900 font-mono">{report.tanggal}</p>
+                                </div>
+                                <div className="p-3 rounded-xl bg-slate-50/70 border border-slate-200/70 space-y-0.5">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Waktu Lapor</span>
+                                    <p className="text-xs font-bold text-slate-900 font-mono">{report.jam_lapor} WIB</p>
+                                </div>
+                                <div className="col-span-2 sm:col-span-1 p-3 rounded-xl bg-slate-50/70 border border-slate-200/70 space-y-0.5">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Status Waktu</span>
+                                    <div>
+                                        {report.status_waktu === "Tepat Waktu" ? (
+                                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 inline-block">
+                                                Tepat Waktu
+                                            </span>
+                                        ) : (
+                                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 inline-block">
+                                                {report.status_waktu}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 3. Uraian & Deskripsi Rinci */}
+                            <div className="space-y-2">
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+                                    Uraian Hasil Kerja
+                                </span>
+                                <div className="p-4 rounded-2xl bg-slate-50/90 border border-slate-200/80 space-y-2">
+                                    <h5 className="text-xs font-bold text-slate-900">{report.laporan}</h5>
+                                    <p className="text-xs leading-relaxed text-slate-600 whitespace-pre-wrap">
+                                        {report.deskripsi || "Tidak ada rincian deskripsi tambahan."}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* 4. Lokasi Kerja (Jika Ada) */}
+                            {report.lokasi && (
+                                <div className="space-y-1.5">
+                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+                                        Koordinat & Lokasi
+                                    </span>
+                                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-2 text-xs text-slate-700">
+                                        <MapPin className="size-4 text-rose-600 shrink-0" />
+                                        <span className="font-medium truncate">{report.lokasi}</span>
+                                    </div>
                                 </div>
                             )}
+
+                            {/* 5. Catatan / Komentar Atasan Sebelumnya */}
+                            {report.komentar_atasan?.trim() && (
+                                <div className="space-y-1.5">
+                                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 block">
+                                        Catatan / Masukan Evaluasi
+                                    </span>
+                                    <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 font-medium italic">
+                                        "{report.komentar_atasan}"
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 6. Lampiran Foto & Dokumen */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                                {/* Foto Bukti */}
+                                <div className="space-y-2">
+                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+                                        Foto Dokumentasi
+                                    </span>
+                                    <div
+                                        onClick={() => { if (imgSrc) setIsImagePreviewOpen(true) }}
+                                        className={cn(
+                                            "relative aspect-[4/3] rounded-2xl border border-slate-200 bg-slate-100 flex items-center justify-center overflow-hidden group",
+                                            imgSrc ? "cursor-pointer" : ""
+                                        )}
+                                    >
+                                        {imgSrc ? (
+                                            <>
+                                                <Image
+                                                    src={imgSrc}
+                                                    alt="Foto Bukti Kerja"
+                                                    fill
+                                                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                                    sizes="300px"
+                                                    onError={() => {
+                                                        if (imgSrc !== fallbackUrl) setImgSrc(fallbackUrl)
+                                                    }}
+                                                />
+                                                <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 text-white">
+                                                    <ZoomIn className="size-5" />
+                                                    <span className="text-[11px] font-bold">Perbesar</span>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="text-center text-slate-400 text-xs space-y-1">
+                                                <ImageIcon className="size-6 mx-auto opacity-40" />
+                                                <p className="text-[10px]">Tidak ada foto</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Dokumen Lampiran */}
+                                <div className="space-y-2">
+                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+                                        Dokumen Pendukung
+                                    </span>
+                                    {dokumenUrl ? (
+                                        <div className="h-[calc(100%-1.5rem)] min-h-[140px] p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col items-center justify-center gap-2.5 text-center">
+                                            <div className="size-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
+                                                <FileText className="size-4" />
+                                            </div>
+                                            <p className="text-[11px] font-medium text-slate-600">Berkas dokumen terlampir</p>
+                                            <button
+                                                onClick={() => window.open(dokumenUrl, '_blank')}
+                                                className="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-slate-300 text-xs font-bold text-blue-700 shadow-sm inline-flex items-center gap-1.5 cursor-pointer"
+                                            >
+                                                <ExternalLink className="size-3" />
+                                                <span>Buka Berkas</span>
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="h-[calc(100%-1.5rem)] min-h-[140px] p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col items-center justify-center gap-1 text-slate-400">
+                                            <FileText className="size-6 opacity-30" />
+                                            <span className="text-[10px]">Tidak ada berkas</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 7. Form Evaluasi Atasan (Hanya untuk Lurah / Sekertaris jika belum approved) */}
+                            {(role === "lurah" || role === "sekertaris") && report.status_review !== "Disetujui" && (
+                                <div className="p-4 sm:p-5 rounded-2xl bg-blue-50/60 border border-blue-200/80 space-y-3">
+                                    <div className="flex items-center gap-2 text-blue-900 font-bold text-xs">
+                                        <MessageSquare className="size-4 text-blue-700" />
+                                        <span>Beri Catatan & Setujui Laporan</span>
+                                    </div>
+                                    <Textarea
+                                        placeholder="Tuliskan masukan atau catatan arahan untuk bawahan..."
+                                        className="min-h-[80px] bg-white border-blue-200 rounded-xl text-xs resize-none"
+                                        value={comment}
+                                        onChange={(e) => setComment(e.target.value)}
+                                    />
+                                    <Button
+                                        className="w-full h-10 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs rounded-xl shadow-sm gap-2"
+                                        disabled={isSubmitting}
+                                        onClick={async () => {
+                                            if (!comment.trim()) {
+                                                toast.error("Mohon isi komentar / arahan evaluasi")
+                                                return
+                                            }
+                                            setIsSubmitting(true)
+                                            try {
+                                                const res = await evaluateReport(report.id, "sudah_direview", comment)
+                                                if (res.status === "success" || res.success) {
+                                                    toast.success("Evaluasi berhasil disimpan dan disetujui")
+                                                    if (onSuccess) onSuccess()
+                                                    onClose()
+                                                } else {
+                                                    toast.error(res.message || "Gagal menyimpan evaluasi")
+                                                }
+                                            } catch {
+                                                toast.error("Terjadi kesalahan saat menyimpan evaluasi")
+                                            } finally {
+                                                setIsSubmitting(false)
+                                            }
+                                        }}
+                                    >
+                                        {isSubmitting ? "Menyimpan Evaluasi..." : "Simpan & Konfirmasi Persetujuan"}
+                                    </Button>
+                                </div>
+                            )}
+
                         </div>
-                    </div>
 
-                    {/* Form Evaluasi (Hanya untuk Lurah/Sekertaris dan jika belum disetujui) */}
-                    {(role === "lurah" || role === "sekertaris") && report.status_review !== "Disetujui" && (
-                        <div className="mt-4 space-y-4 rounded-2xl border-2 border-blue-100 bg-blue-50/30 p-5 dark:border-blue-900/30 dark:bg-blue-950/20">
-                            <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
-                                <MessageSquare className="size-5" />
-                                <h4 className="text-sm font-bold">Evaluasi & Masukan Atasan</h4>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Textarea
-                                    placeholder="Tuliskan masukan atau catatan untuk laporan ini..."
-                                    className="min-h-[100px] bg-background resize-none border-blue-100 focus-visible:ring-blue-400"
-                                    value={comment}
-                                    onChange={(e) => setComment(e.target.value)}
-                                />
-                                <p className="text-[10px] text-muted-foreground italic">
-                                    * Menyimpan evaluasi akan otomatis mengubah status laporan menjadi "Disetujui".
-                                </p>
-                            </div>
-
-                            <Button
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold gap-2 shadow-lg shadow-blue-200 dark:shadow-none"
-                                onClick={async () => {
-                                    if (!comment.trim()) {
-                                        toast.error("Mohon isi komentar/masukan")
-                                        return
-                                    }
-
-                                    setIsSubmitting(true)
-                                    try {
-                                        const res = await evaluateReport(report.id, "sudah_direview", comment)
-                                        if (res.status === "success" || res.success) {
-                                            toast.success("Evaluasi berhasil disimpan")
-                                            if (onSuccess) onSuccess()
-                                            onClose()
-                                        } else {
-                                            toast.error(res.message || "Gagal menyimpan evaluasi")
-                                        }
-                                    } catch (error) {
-                                        toast.error("Terjadi kesalahan sistem")
-                                    } finally {
-                                        setIsSubmitting(false)
-                                    }
-                                }}
-                                disabled={isSubmitting}
+                        {/* Modal Footer */}
+                        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex justify-end">
+                            <button
+                                onClick={onClose}
+                                className="px-5 py-2 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
                             >
-                                {isSubmitting ? (
-                                    <div className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                ) : (
-                                    <Send className="size-4" />
-                                )}
-                                Simpan & Setujui Laporan
-                            </Button>
+                                Tutup
+                            </button>
                         </div>
-                    )}
-                </div>
 
-                <DialogFooter className="border-t pt-4">
-                    <Button variant="outline" onClick={onClose} className="w-full sm:w-auto font-bold">
-                        Tutup
-                    </Button>
-                </DialogFooter>
+                    </div>
+                </div>
             </DialogContent>
+
+            {/* Modal Zoom Preview Foto Bukti */}
+            <Dialog open={isImagePreviewOpen} onOpenChange={setIsImagePreviewOpen}>
+                <DialogContent className="max-w-[90vw] md:max-w-[800px] p-4 bg-white rounded-3xl border-slate-200 shadow-2xl">
+                    <DialogHeader className="flex flex-row items-center justify-between pb-3 border-b">
+                        <DialogTitle className="text-sm font-bold flex items-center gap-2 text-slate-900">
+                            <ImageIcon className="size-4 text-blue-700" />
+                            Foto Dokumentasi Kegiatan
+                        </DialogTitle>
+                        {imgSrc && (
+                            <button
+                                className="inline-flex items-center gap-1 text-xs font-bold text-blue-700 hover:underline cursor-pointer"
+                                onClick={() => window.open(imgSrc, '_blank')}
+                            >
+                                <ExternalLink className="size-3.5" />
+                                <span>Buka Asli</span>
+                            </button>
+                        )}
+                    </DialogHeader>
+                    <div className="relative w-full aspect-[4/3] md:aspect-[16/10] max-h-[75vh] flex items-center justify-center overflow-hidden rounded-2xl bg-slate-100 mt-2">
+                        {imgSrc && (
+                            <Image
+                                src={imgSrc}
+                                alt="Foto Bukti Ukuran Penuh"
+                                fill
+                                className="object-contain"
+                                sizes="800px"
+                            />
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </Dialog>
     )
 }

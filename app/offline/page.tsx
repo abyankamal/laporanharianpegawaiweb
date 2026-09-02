@@ -2,46 +2,36 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { 
-  WifiOff, 
-  RefreshCw, 
-  Home, 
-  CheckCircle2, 
-  Server, 
-  Clock,
-  ArrowRight,
-  AlertCircle
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 export default function OfflinePage() {
   const router = useRouter();
   const [isRetrying, setIsRetrying] = useState(false);
   const [status, setStatus] = useState<"offline" | "connecting" | "online">("offline");
   const [countdown, setCountdown] = useState(30);
+  const [lastChecked, setLastChecked] = useState<string>("");
 
   const checkConnection = useCallback(async () => {
     setStatus("connecting");
     setIsRetrying(true);
-    
-    // Simulate a ping or connection check
+
     try {
-      // Try to fetch a small resource or just check navigator.onLine
-      const online = navigator.onLine;
-      
-      // Wait a bit to show the "connecting" state for UX
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      // Small timeout for smooth feedback
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const online = typeof navigator !== "undefined" ? navigator.onLine : false;
+
+      const now = new Date();
+      setLastChecked(
+        `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`
+      );
+
       if (online) {
         setStatus("online");
-        // If back online, refresh the page to the original destination or home
         window.location.href = "/";
       } else {
         setStatus("offline");
-        setCountdown(30); // Reset timer
+        setCountdown(30);
       }
-    } catch (err) {
+    } catch {
       setStatus("offline");
       setCountdown(30);
     } finally {
@@ -50,6 +40,11 @@ export default function OfflinePage() {
   }, []);
 
   useEffect(() => {
+    const now = new Date();
+    setLastChecked(
+      `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`
+    );
+
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -66,7 +61,7 @@ export default function OfflinePage() {
     };
 
     const handleOffline = () => {
-        setStatus("offline");
+      setStatus("offline");
     };
 
     window.addEventListener("online", handleOnline);
@@ -80,138 +75,443 @@ export default function OfflinePage() {
   }, [checkConnection]);
 
   const currentYear = new Date().getFullYear();
+  const progressPercentage = ((30 - countdown) / 30) * 100;
 
   return (
-    <div className="relative min-h-screen font-sans flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 via-indigo-50 to-blue-200 overflow-hidden px-4 py-8">
-      
-      {/* Background Abstract Blobs (Consistent with Login) */}
-      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob" />
-      <div className="absolute top-[-10%] right-[-10%] w-[400px] h-[400px] bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob animation-delay-2000" />
-      <div className="absolute bottom-[-20%] left-[20%] w-[600px] h-[600px] bg-indigo-300 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob animation-delay-4000" />
+    <>
+      <style>{`
+        :root {
+          --canvas-bg: #FBFBFA;
+          --card-bg: #FFFFFF;
+          --card-subtle: #F9F9F8;
+          --border-color: #EAEAEA;
+          --text-primary: #111111;
+          --text-secondary: #787774;
+          --pastel-red-bg: #FDEBEC;
+          --pastel-red-text: #9F2F2D;
+          --pastel-yellow-bg: #FBF3DB;
+          --pastel-yellow-text: #956400;
+          --pastel-green-bg: #EDF3EC;
+          --pastel-green-text: #346538;
+          --font-editorial: 'Newsreader', 'Playfair Display', 'Instrument Serif', Georgia, serif;
+          --font-sans: 'SF Pro Display', 'Geist Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+          --font-mono: 'Geist Mono', 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+        }
 
-      {/* Main Glass Container */}
-      <main className="relative z-10 w-full max-w-lg bg-white/40 backdrop-blur-xl border border-white/50 shadow-2xl rounded-3xl overflow-hidden animate-in fade-in zoom-in duration-500">
-        
-        <div className="p-8 md:p-10 flex flex-col items-center text-center">
-          
-          {/* Logo & Brand */}
-          <div className="flex items-center gap-3 mb-8">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 border border-blue-600/20 backdrop-blur-sm shadow-sm overflow-hidden p-2">
-              <Image
-                src="/logo.png"
-                alt="SIOPIK Logo"
-                width={28}
-                height={28}
-                className="object-contain"
-              />
+        .minimalist-container {
+          min-height: 100vh;
+          background-color: var(--canvas-bg);
+          font-family: var(--font-sans);
+          color: var(--text-primary);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 3rem 1.25rem;
+          position: relative;
+          box-sizing: border-box;
+        }
+
+        .minimalist-card {
+          width: 100%;
+          max-width: 540px;
+          background: var(--card-bg);
+          border: 1px solid var(--border-color);
+          border-radius: 12px;
+          padding: 2.25rem 2rem;
+          box-sizing: border-box;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02), 0 8px 20px rgba(0, 0, 0, 0.03);
+        }
+
+        .minimalist-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 10px;
+          border-radius: 9999px;
+          font-size: 0.6875rem;
+          font-weight: 600;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          line-height: 1;
+        }
+
+        .badge-offline {
+          background-color: var(--pastel-red-bg);
+          color: var(--pastel-red-text);
+          border: 1px solid rgba(159, 47, 45, 0.15);
+        }
+
+        .badge-connecting {
+          background-color: var(--pastel-yellow-bg);
+          color: var(--pastel-yellow-text);
+          border: 1px solid rgba(149, 100, 0, 0.15);
+        }
+
+        .badge-online {
+          background-color: var(--pastel-green-bg);
+          color: var(--pastel-green-text);
+          border: 1px solid rgba(52, 101, 56, 0.15);
+        }
+
+        .status-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background-color: currentColor;
+        }
+
+        .heading-serif {
+          font-family: var(--font-editorial);
+          font-size: 2rem;
+          line-height: 1.15;
+          font-weight: 500;
+          letter-spacing: -0.025em;
+          color: var(--text-primary);
+          margin: 0 0 0.5rem 0;
+        }
+
+        .text-desc {
+          font-size: 0.875rem;
+          line-height: 1.6;
+          color: var(--text-secondary);
+          margin: 0 0 1.75rem 0;
+        }
+
+        .bento-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.75rem;
+          margin-bottom: 0.75rem;
+        }
+
+        .bento-item {
+          background: var(--card-subtle);
+          border: 1px solid var(--border-color);
+          border-radius: 8px;
+          padding: 1rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.375rem;
+          box-sizing: border-box;
+        }
+
+        .bento-item-full {
+          background: var(--card-subtle);
+          border: 1px solid var(--border-color);
+          border-radius: 8px;
+          padding: 1rem 1.125rem;
+          margin-bottom: 1.5rem;
+          box-sizing: border-box;
+        }
+
+        .bento-title {
+          font-size: 0.8125rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin: 0;
+        }
+
+        .bento-meta {
+          font-size: 0.75rem;
+          line-height: 1.45;
+          color: var(--text-secondary);
+          margin: 0;
+        }
+
+        .mono-text {
+          font-family: var(--font-mono);
+          font-size: 0.75rem;
+          color: var(--text-secondary);
+        }
+
+        .btn-primary {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          width: 100%;
+          height: 42px;
+          background: #111111;
+          color: #FFFFFF;
+          border: 1px solid #111111;
+          border-radius: 6px;
+          font-size: 0.875rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background-color 0.15s ease, transform 0.1s ease;
+          font-family: var(--font-sans);
+          text-decoration: none;
+          box-sizing: border-box;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+          background: #2B2B2B;
+        }
+
+        .btn-primary:active:not(:disabled) {
+          transform: scale(0.98);
+        }
+
+        .btn-primary:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .btn-secondary {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          width: 100%;
+          height: 42px;
+          background: #FFFFFF;
+          color: var(--text-primary);
+          border: 1px solid var(--border-color);
+          border-radius: 6px;
+          font-size: 0.875rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+          font-family: var(--font-sans);
+          text-decoration: none;
+          box-sizing: border-box;
+          margin-top: 0.625rem;
+        }
+
+        .btn-secondary:hover {
+          background: #F7F6F3;
+          border-color: #DFDFDF;
+        }
+
+        .btn-secondary:active {
+          transform: scale(0.98);
+        }
+
+        .progress-bar-bg {
+          width: 100%;
+          height: 3px;
+          background: var(--border-color);
+          border-radius: 2px;
+          overflow: hidden;
+          margin-top: 8px;
+        }
+
+        .progress-bar-fill {
+          height: 100%;
+          background: var(--text-primary);
+          transition: width 1s linear;
+        }
+
+        .footer-text {
+          margin-top: 2rem;
+          font-family: var(--font-mono);
+          font-size: 0.6875rem;
+          color: #9A9996;
+          text-align: center;
+          letter-spacing: 0.02em;
+        }
+
+        .spin-icon {
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 480px) {
+          .bento-grid {
+            grid-template-columns: 1fr;
+          }
+          .minimalist-card {
+            padding: 1.5rem 1.25rem;
+          }
+          .heading-serif {
+            font-size: 1.625rem;
+          }
+        }
+      `}</style>
+
+      <div className="minimalist-container">
+        <main className="minimalist-card">
+          {/* Top Brand & Status Section */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: "1.75rem",
+              paddingBottom: "1.25rem",
+              borderBottom: "1px solid var(--border-color)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "6px",
+                  border: "1px solid var(--border-color)",
+                  background: "var(--card-subtle)",
+                  overflow: "hidden",
+                }}
+              >
+                {/* Embedded safe image with SVG fallback for pure offline reliability */}
+                <img
+                  src="/logo.png"
+                  alt="SIOPIK Logo"
+                  width="20"
+                  height="20"
+                  style={{ objectFit: "contain", display: "block" }}
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = "none";
+                  }}
+                />
+              </div>
+              <span
+                style={{
+                  fontSize: "0.8125rem",
+                  fontWeight: 600,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "var(--text-primary)",
+                  fontFamily: "var(--font-mono)",
+                }}
+              >
+                SIOPIK
+              </span>
             </div>
-            <span className="text-xl font-bold tracking-tight text-slate-800 uppercase">SIOPIK</span>
-          </div>
 
-          {/* Offline Illustration/Icon */}
-          <div className="relative mb-6">
-            <div className={`p-6 rounded-full ${status === 'connecting' ? 'bg-amber-100' : 'bg-red-100'} transition-colors duration-500`}>
-              <WifiOff className={`h-12 w-12 ${status === 'connecting' ? 'text-amber-500' : 'text-red-500'} ${status === 'offline' ? 'animate-pulse' : ''}`} />
-            </div>
-            {status === 'connecting' && (
-                <div className="absolute inset-0 border-4 border-amber-400 border-t-transparent rounded-full animate-spin" />
-            )}
-          </div>
-
-          {/* Status Badge */}
-          <div className="mb-4">
+            {/* Status Badge */}
             {status === "offline" && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider">
+              <span className="minimalist-badge badge-offline">
+                <span className="status-dot" />
                 Offline
               </span>
             )}
             {status === "connecting" && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200 uppercase tracking-wider">
-                Menghubungkan...
+              <span className="minimalist-badge badge-connecting">
+                <span className="status-dot" />
+                Memeriksa
               </span>
             )}
             {status === "online" && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200 uppercase tracking-wider">
+              <span className="minimalist-badge badge-online">
+                <span className="status-dot" />
                 Tersambung
               </span>
             )}
           </div>
 
-          <h1 className="text-3xl font-extrabold text-slate-800 leading-tight mb-3">
-            Koneksi Terputus
-          </h1>
-          <p className="text-slate-500 leading-relaxed mb-8 max-w-sm">
-            Maaf, kami tidak dapat menghubungkan Anda ke server. Periksa koneksi internet Anda atau coba lagi sebentar lagi.
+          {/* Heading & Context */}
+          <h1 className="heading-serif">Koneksi Terputus</h1>
+          <p className="text-desc">
+            Sistem tidak dapat menjangkau server aplikasi. Periksa jaringan internet perangkat Anda atau tunggu percobaan koneksi ulang otomatis.
           </p>
 
-          {/* Suggestions */}
-          <div className="w-full bg-white/30 rounded-2xl p-6 mb-8 border border-white/40 text-left space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 p-1 rounded-full bg-blue-100 text-blue-600">
-                <CheckCircle2 className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-700">Periksa Network</p>
-                <p className="text-xs text-slate-500">Pastikan Wi-Fi atau Data Seluler Anda aktif.</p>
-              </div>
+          {/* Bento Diagnostic Grid */}
+          <div className="bento-grid">
+            <div className="bento-item">
+              <p className="bento-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                  <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                  <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                  <line x1="12" y1="20" x2="12.01" y2="20" strokeWidth="3" />
+                </svg>
+                Jaringan Lokal
+              </p>
+              <p className="bento-meta">
+                Pastikan Wi-Fi atau data seluler dalam kondisi aktif.
+              </p>
             </div>
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 p-1 rounded-full bg-blue-100 text-blue-600">
-                <Server className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-700">Kapasitas Server</p>
-                <p className="text-xs text-slate-500">Mungkin server sedang dalam pemeliharaan rutin.</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 p-1 rounded-full bg-blue-100 text-blue-600">
-                <Clock className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-700">Otomatis Mencoba</p>
-                <p className="text-xs text-slate-500 italic">Mencoba ulang dalam {countdown} detik...</p>
-              </div>
+
+            <div className="bento-item">
+              <p className="bento-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                  <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                  <line x1="6" y1="6" x2="6.01" y2="6" strokeWidth="2" />
+                  <line x1="6" y1="18" x2="6.01" y2="18" strokeWidth="2" />
+                </svg>
+                Status Server
+              </p>
+              <p className="bento-meta">
+                Layanan mungkin sedang melakukan sinkronisasi berkala.
+              </p>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="w-full space-y-3">
-            <Button
-              onClick={checkConnection}
-              disabled={isRetrying}
-              className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2"
-            >
-              {isRetrying ? (
-                <>
-                  <RefreshCw className="h-5 w-5 animate-spin" />
-                  <span>Menghubungkan...</span>
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="h-5 w-5" />
-                  <span>Coba Lagi Sekarang</span>
-                </>
-              )}
-            </Button>
-            
-            <Button
-              variant="outline"
-              onClick={() => router.push("/")}
-              className="w-full h-12 bg-white/50 border-slate-200 hover:bg-white text-slate-700 font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
-            >
-              <Home className="h-4 w-4" />
-              <span>Kembali ke Halaman Login</span>
-            </Button>
+          {/* Full-width Auto Retry Status */}
+          <div className="bento-item-full">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+              <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                Mencoba Ulang Otomatis
+              </span>
+              <span className="mono-text">
+                {String(countdown).padStart(2, "0")}s
+              </span>
+            </div>
+            <p className="bento-meta" style={{ display: "flex", justifyContent: "space-between" }}>
+              <span>Pemeriksaan berkala aktif</span>
+              {lastChecked && <span className="mono-text">Terakhir: {lastChecked}</span>}
+            </p>
+            <div className="progress-bar-bg">
+              <div className="progress-bar-fill" style={{ width: `${progressPercentage}%` }} />
+            </div>
           </div>
 
-        </div>
-      </main>
+          {/* Actions */}
+          <button
+            type="button"
+            onClick={checkConnection}
+            disabled={isRetrying}
+            className="btn-primary"
+          >
+            {isRetrying ? (
+              <>
+                <svg className="spin-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                </svg>
+                <span>Menghubungkan...</span>
+              </>
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                </svg>
+                <span>Coba Hubungkan Sekarang</span>
+              </>
+            )}
+          </button>
 
-      {/* Global Footer */}
-      <div className="relative z-10 mt-8 text-center text-xs font-medium text-slate-500/80">
-        Hak Cipta © {currentYear} Pemerintah Kelurahan Sukanegla.
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="btn-secondary"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+            <span>Kembali ke Halaman Utama</span>
+          </button>
+        </main>
+
+        {/* Minimalist Footer */}
+        <footer className="footer-text">
+          SIOPIK · PEMERINTAH KELURAHAN SUKANEGLA © {currentYear}
+        </footer>
       </div>
-    </div>
+    </>
   );
 }
+

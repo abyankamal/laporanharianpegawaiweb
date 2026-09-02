@@ -5,7 +5,7 @@ export async function GET(req: NextRequest) {
     try {
         const token = req.cookies.get("admin_token")?.value
 
-        const response = await fetch(`${BACKEND_URL}/api/web/jabatan`, {
+        const response = await fetch(`${BACKEND_URL}/api/web/admin/jabatan`, {
             headers: {
                 "Authorization": `Bearer ${token}`,
             },

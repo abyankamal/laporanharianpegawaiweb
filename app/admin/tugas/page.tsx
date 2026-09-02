@@ -1,22 +1,27 @@
 "use client"
 
 import { BACKEND_URL } from "@/lib/api-config"
-
 import * as React from "react"
-import { format } from "date-fns"
+import { format, isPast, differenceInDays } from "date-fns"
+import { id as localeID } from "date-fns/locale"
 import {
     Plus,
     Pencil,
-    Eye,
-    ChevronLeft,
-    ChevronRight,
     Trash2,
     FileText,
-    ExternalLink
+    ExternalLink,
+    CalendarCheck,
+    Clock,
+    Users,
+    Building2,
+    LayoutGrid,
+    Table as TableIcon,
+    AlertCircle,
+    CheckCircle2,
+    FileCheck
 } from "lucide-react"
 
 import { CustomPagination } from "@/components/CustomPagination"
-
 import { Button } from "@/components/ui/button"
 import {
     Table,
@@ -26,10 +31,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { cn } from "@/lib/utils"
 import { FormTugasModal, TugasData } from "@/components/FormTugasModal"
 import { getTasks, createTask, updateTask, deleteTask, Task } from "@/lib/api/tasks"
 import {
@@ -48,6 +50,7 @@ export default function PemantauanTugasPage() {
     const [tasks, setTasks] = React.useState<Task[]>([])
     const [loading, setLoading] = React.useState(true)
     const [error, setError] = React.useState<string | null>(null)
+    const [viewMode, setViewMode] = React.useState<"table" | "board">("table")
     const [currentPage, setCurrentPage] = React.useState(1)
     const [totalPages, setTotalPages] = React.useState(1)
     const [totalData, setTotalData] = React.useState(0)
@@ -72,14 +75,16 @@ export default function PemantauanTugasPage() {
         try {
             const response = await getTasks()
             if (response.success) {
-                setTasks(response.data)
-                setTotalData(response.data.length)
-                setTotalPages(Math.ceil(response.data.length / limit))
+                setTasks(response.data || [])
+                setTotalData(response.data?.length || 0)
+                setTotalPages(Math.ceil((response.data?.length || 0) / limit) || 1)
             } else {
-                if (response.message === "User tidak terautentikasi" ||
+                if (
+                    response.message === "User tidak terautentikasi" ||
                     response.message === "Role tidak ditemukan" ||
                     response.message?.includes("Token tidak valid") ||
-                    response.message?.includes("kadal")) {
+                    response.message?.includes("kadal")
+                ) {
                     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => { });
                     window.location.href = '/'
                     return;
@@ -92,7 +97,7 @@ export default function PemantauanTugasPage() {
         } finally {
             setLoading(false)
         }
-    }, [])
+    }, [limit])
 
     React.useEffect(() => {
         fetchTasks()
@@ -120,12 +125,12 @@ export default function PemantauanTugasPage() {
             if (formModeData?.id) {
                 const res = await updateTask(formModeData.id, formData)
                 if (res.success) {
-                    toast.success("Tugas Berhasil Diperbarui")
+                    toast.success("Tugas berhasil diperbarui")
                 }
             } else {
                 const res = await createTask(formData)
                 if (res.success) {
-                    toast.success("Tugas Berhasil Ditambahkan")
+                    toast.success("Tugas berhasil ditambahkan")
                 }
             }
             fetchTasks()
@@ -145,13 +150,12 @@ export default function PemantauanTugasPage() {
         try {
             const response = await deleteTask(deleteId)
             if (response.success) {
-                toast.success("Tugas Berhasil Dihapus")
+                toast.success("Tugas berhasil dihapus")
                 fetchTasks()
             } else {
                 toast.error(response.message || "Gagal menghapus tugas")
             }
-        } catch (err) {
-            console.error("Error deleting task:", err)
+        } catch {
             toast.error("Gagal menghapus tugas")
         } finally {
             setIsDeleting(false)
@@ -160,8 +164,6 @@ export default function PemantauanTugasPage() {
     }
 
     const handleViewFile = (filePath: string) => {
-        // Adjust based on how your backend serves files
-        // If server serves with /api prefix as seen in main.go
         const fullUrl = `${BACKEND_URL}/${filePath.replace(/^\//, '')}`
         window.open(fullUrl, '_blank')
     }
@@ -171,155 +173,290 @@ export default function PemantauanTugasPage() {
         currentPage * limit
     )
 
+    const getDeadlineBadge = (deadlineStr?: string | null) => {
+        if (!deadlineStr) return null
+        try {
+            const d = new Date(deadlineStr)
+            const isOverdue = isPast(d)
+            const daysLeft = differenceInDays(d, new Date())
+
+            if (isOverdue) {
+                return (
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
+                        Lewat Batas
+                    </span>
+                )
+            }
+            if (daysLeft <= 2) {
+                return (
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
+                        Mendesak ({daysLeft}h)
+                    </span>
+                )
+            }
+            return (
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                    Aktif
+                </span>
+            )
+        } catch {
+            return null
+        }
+    }
+
     return (
-        <div className="flex flex-col gap-6 p-1">
-            {/* Header Halaman & Tombol Aksi */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                    <h1 className="text-2xl font-bold tracking-tight">Pemantauan Tugas</h1>
-                    <p className="text-muted-foreground text-sm">
-                        Kelola dan pantau progres tugas tim Anda secara real-time
+        <div className="flex flex-col gap-8 max-w-7xl mx-auto p-1 sm:p-2 selection:bg-blue-600 selection:text-white">
+            
+            {/* Header: Eyebrow + Title + Actions */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-4 border-b border-slate-200/80">
+                <div className="space-y-2">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-[11px] font-semibold text-slate-700">
+                        <Building2 className="size-3.5 text-slate-500" />
+                        <span>Manajemen Penugasan Organisasi</span>
+                        <span className="text-slate-400">•</span>
+                        <span className="font-mono text-slate-600">Kelurahan Sukanegla</span>
+                    </div>
+
+                    <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 leading-none">
+                        Pemantauan Tugas
+                    </h1>
+                    <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+                        Delegasi tugas, pemantauan tenggat waktu, dan evaluasi hasil kerja aparatur sipil kelurahan.
                     </p>
                 </div>
-                <Button
-                    className="w-full sm:w-auto flex items-center gap-2 bg-blue-600 hover:bg-blue-700 shadow-sm shrink-0 text-white"
-                    onClick={handleAddTugasClick}
-                >
-                    <Plus className="size-4" />
-                    <span>Tambah Tugas</span>
-                </Button>
+
+                {/* Island Actions (View Toggle + Add Task Button) */}
+                <div className="flex items-center gap-3 flex-wrap">
+                    {/* View Switcher Pill */}
+                    <div className="p-1 rounded-full bg-slate-100 border border-slate-200 flex items-center gap-1">
+                        <button
+                            onClick={() => setViewMode("table")}
+                            className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                                viewMode === "table"
+                                    ? "bg-white text-slate-900 shadow-sm"
+                                    : "text-slate-500 hover:text-slate-800"
+                            }`}
+                        >
+                            <TableIcon className="size-3.5" />
+                            <span>Tabel</span>
+                        </button>
+                        <button
+                            onClick={() => setViewMode("board")}
+                            className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                                viewMode === "board"
+                                    ? "bg-white text-slate-900 shadow-sm"
+                                    : "text-slate-500 hover:text-slate-800"
+                            }`}
+                        >
+                            <LayoutGrid className="size-3.5" />
+                            <span>Kartu</span>
+                        </button>
+                    </div>
+
+                    {/* Add Button */}
+                    <button
+                        onClick={handleAddTugasClick}
+                        className="group inline-flex items-center gap-3 pl-5 pr-2 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-md text-xs font-bold transition-all duration-300 active:scale-[0.98] cursor-pointer"
+                    >
+                        <span>Tambah Tugas</span>
+                        <div className="size-6 rounded-full bg-white/15 flex items-center justify-center transition-all duration-300 group-hover:rotate-90 group-hover:bg-white/25">
+                            <Plus className="size-3.5" />
+                        </div>
+                    </button>
+                </div>
             </div>
 
-            {/* Card Tabel Data Tugas */}
-            <Card className="shadow-sm border-muted-foreground/10 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader className="bg-muted/50">
-                            <TableRow>
-                                <TableHead className="w-12 text-center">NO</TableHead>
-                                <TableHead className="min-w-[250px]">JUDUL TUGAS</TableHead>
-                                <TableHead className="min-w-[200px]">PENANGGUNG JAWAB</TableHead>
-                                <TableHead className="min-w-[140px]">DEADLINE</TableHead>
-                                <TableHead className="min-w-[140px] text-center">FILE</TableHead>
-                                <TableHead className="text-right min-w-[120px]">AKSI</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {loading ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                                        Memuat data tugas...
-                                    </TableCell>
-                                </TableRow>
-                            ) : error ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="h-24 text-center text-red-500">
-                                        {error}
-                                    </TableCell>
-                                </TableRow>
-                            ) : tasks.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                                        Belum ada tugas organisasi.
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                paginatedTasks.map((item, index) => (
-                                    <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
-                                        <TableCell className="text-center font-medium">
-                                            {(currentPage - 1) * limit + index + 1}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex flex-col max-w-[400px]">
-                                                <span className="font-bold text-sm text-foreground truncate" title={item.judul_tugas}>
-                                                    {item.judul_tugas}
-                                                </span>
-                                                <p className="text-xs text-muted-foreground line-clamp-1">
-                                                    {item.deskripsi ? (item.deskripsi.length > 80 ? `${item.deskripsi.substring(0, 80)}...` : item.deskripsi) : "Tidak ada deskripsi"}
-                                                </p>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex -space-x-3 overflow-hidden">
-                                                {item.assignees?.slice(0, 3).map((assignee) => (
-                                                    <Avatar key={assignee.id} className="size-8 border-2 border-background shadow-sm hover:z-10 transition-all">
-                                                        <AvatarImage src={assignee.foto_path || ''} alt={assignee.nama} />
-                                                        <AvatarFallback className="bg-blue-100 text-blue-600 text-[10px] font-bold">
-                                                            {assignee.nama.substring(0, 2).toUpperCase()}
-                                                        </AvatarFallback>
-                                                    </Avatar>
-                                                ))}
-                                                {item.assignees && item.assignees.length > 3 && (
-                                                    <div className="flex items-center justify-center size-8 rounded-full border-2 border-background bg-slate-100 text-[10px] font-bold text-slate-600 z-0">
-                                                        +{item.assignees.length - 3}
-                                                    </div>
-                                                )}
-                                                {(!item.assignees || item.assignees.length === 0) && (
-                                                    <span className="text-xs text-muted-foreground">Belum di-assign</span>
-                                                )}
-                                            </div>
-                                            {item.assignees && item.assignees.length > 0 && (
-                                                <p className="text-[10px] mt-1 text-muted-foreground font-medium">
-                                                    {item.assignees[0].nama} {item.assignees.length > 1 ? `& ${item.assignees.length - 1} lainnya` : ''}
-                                                </p>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="text-sm font-medium">
-                                            {item.deadline ? format(new Date(item.deadline), "dd MMM yyyy, HH:mm") : "-"}
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            {item.file_bukti ? (
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 gap-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                                    onClick={() => handleViewFile(item.file_bukti!)}
-                                                >
-                                                    <FileText className="size-4" />
-                                                    <span className="text-xs font-semibold">Tinjau</span>
-                                                </Button>
-                                            ) : (
-                                                <span className="text-xs text-muted-foreground">-</span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex items-center justify-end gap-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="size-8 text-muted-foreground hover:text-blue-600 hover:bg-blue-50"
-                                                    onClick={() => handleEditTugasClick(item)}
-                                                >
-                                                    <Pencil className="size-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="size-8 text-muted-foreground hover:text-red-600 hover:bg-red-50"
-                                                    onClick={() => handleDeleteClick(item.id)}
-                                                >
-                                                    <Trash2 className="size-4" />
-                                                </Button>
-                                            </div>
-                                        </TableCell>
+            {/* Content Container: Double-Bezel Hardware Architecture */}
+            <div className="rounded-[2rem] bg-slate-100/90 border border-slate-200/90 p-2 shadow-sm">
+                <div className="rounded-[calc(2rem-0.5rem)] bg-white overflow-hidden shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
+                    
+                    {loading ? (
+                        <div className="py-20 text-center flex flex-col items-center justify-center gap-2">
+                            <div className="size-6 animate-spin rounded-full border-2 border-slate-300 border-t-blue-700" />
+                            <span className="text-xs font-semibold text-slate-500">Memuat data tugas...</span>
+                        </div>
+                    ) : tasks.length === 0 ? (
+                        <div className="py-20 text-center text-slate-400 space-y-2">
+                            <CalendarCheck className="size-8 mx-auto opacity-30" />
+                            <p className="text-xs font-medium">Belum ada tugas organisasi yang dibuat.</p>
+                        </div>
+                    ) : viewMode === "table" ? (
+                        /* TABEL VIEW */
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader className="bg-slate-50/80 border-b border-slate-100">
+                                    <TableRow>
+                                        <TableHead className="w-12 text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">NO</TableHead>
+                                        <TableHead className="min-w-[280px] text-[11px] font-bold uppercase tracking-wider text-slate-500">JUDUL & DESKRIPSI TUGAS</TableHead>
+                                        <TableHead className="min-w-[200px] text-[11px] font-bold uppercase tracking-wider text-slate-500">PENANGGUNG JAWAB</TableHead>
+                                        <TableHead className="min-w-[160px] text-[11px] font-bold uppercase tracking-wider text-slate-500">BATAS WAKTU (DEADLINE)</TableHead>
+                                        <TableHead className="text-center min-w-[120px] text-[11px] font-bold uppercase tracking-wider text-slate-500">LAMPIRAN</TableHead>
+                                        <TableHead className="text-right min-w-[100px] text-[11px] font-bold uppercase tracking-wider text-slate-500">AKSI</TableHead>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-                <CustomPagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                    totalData={totalData}
-                    limit={limit}
-                    onLimitChange={handleLimitChange}
-                    itemName="tugas"
-                />
-            </Card>
+                                </TableHeader>
+                                <TableBody className="divide-y divide-slate-100">
+                                    {paginatedTasks.map((item, index) => (
+                                        <TableRow key={item.id} className="hover:bg-slate-50/60 transition-colors group">
+                                            <TableCell className="text-center text-xs font-mono text-slate-400">
+                                                {(currentPage - 1) * limit + index + 1}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="space-y-0.5 max-w-[360px]">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-bold text-slate-900 block truncate" title={item.judul_tugas}>
+                                                            {item.judul_tugas}
+                                                        </span>
+                                                        {getDeadlineBadge(item.deadline)}
+                                                    </div>
+                                                    <p className="text-[11px] text-slate-500 line-clamp-1 leading-relaxed">
+                                                        {item.deskripsi || "Tidak ada deskripsi rincian."}
+                                                    </p>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex -space-x-2 overflow-hidden">
+                                                        {item.assignees?.slice(0, 3).map((assignee) => (
+                                                            <Avatar key={assignee.id} className="size-7 rounded-xl border-2 border-white shadow-sm">
+                                                                <AvatarImage src={assignee.foto_path || ''} alt={assignee.nama} />
+                                                                <AvatarFallback className="bg-blue-50 text-blue-700 text-[9px] font-bold font-mono">
+                                                                    {assignee.nama.substring(0, 2).toUpperCase()}
+                                                                </AvatarFallback>
+                                                            </Avatar>
+                                                        ))}
+                                                        {item.assignees && item.assignees.length > 3 && (
+                                                            <div className="size-7 rounded-xl border-2 border-white bg-slate-100 text-[9px] font-bold text-slate-600 flex items-center justify-center font-mono">
+                                                                +{item.assignees.length - 3}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <span className="text-xs font-medium text-slate-700 truncate max-w-[130px]">
+                                                        {item.assignees?.[0]?.nama || "Belum di-assign"}
+                                                    </span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-1.5 text-xs font-mono text-slate-700">
+                                                    <Clock className="size-3.5 text-slate-400" />
+                                                    <span>{item.deadline ? format(new Date(item.deadline), "dd MMM yyyy, HH:mm", { locale: localeID }) : "-"}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                {item.file_bukti ? (
+                                                    <button
+                                                        onClick={() => handleViewFile(item.file_bukti!)}
+                                                        className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-bold inline-flex items-center gap-1 transition-colors cursor-pointer"
+                                                    >
+                                                        <FileText className="size-3" />
+                                                        <span>Berkas</span>
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-slate-300 text-xs">-</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <button
+                                                        onClick={() => handleEditTugasClick(item)}
+                                                        className="size-8 rounded-xl bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-700 inline-flex items-center justify-center transition-colors cursor-pointer"
+                                                        title="Edit Tugas"
+                                                    >
+                                                        <Pencil className="size-3.5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteClick(item.id)}
+                                                        className="size-8 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 inline-flex items-center justify-center transition-colors cursor-pointer"
+                                                        title="Hapus Tugas"
+                                                    >
+                                                        <Trash2 className="size-3.5" />
+                                                    </button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    ) : (
+                        /* BOARD VIEW (Bento Cards) */
+                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {paginatedTasks.map((item) => (
+                                <div
+                                    key={item.id}
+                                    className="p-5 rounded-2xl bg-slate-50/80 border border-slate-200/80 hover:border-slate-300 hover:bg-slate-50 transition-all flex flex-col justify-between space-y-4"
+                                >
+                                    <div className="space-y-2">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <h4 className="text-sm font-bold text-slate-900 line-clamp-1" title={item.judul_tugas}>
+                                                {item.judul_tugas}
+                                            </h4>
+                                            {getDeadlineBadge(item.deadline)}
+                                        </div>
+                                        <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
+                                            {item.deskripsi || "Tidak ada rincian keterangan tugas."}
+                                        </p>
+                                    </div>
 
-            {/* Modal Form Tambah/Edit Tugas */}
+                                    <div className="pt-3 border-t border-slate-200/60 flex items-center justify-between">
+                                        <div className="flex -space-x-2">
+                                            {item.assignees?.slice(0, 3).map((assignee) => (
+                                                <Avatar key={assignee.id} className="size-7 rounded-xl border-2 border-white shadow-sm">
+                                                    <AvatarImage src={assignee.foto_path || ''} alt={assignee.nama} />
+                                                    <AvatarFallback className="bg-blue-50 text-blue-700 text-[9px] font-bold font-mono">
+                                                        {assignee.nama.substring(0, 2).toUpperCase()}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                            ))}
+                                        </div>
+
+                                        <div className="flex items-center gap-1.5">
+                                            {item.file_bukti && (
+                                                <button
+                                                    onClick={() => handleViewFile(item.file_bukti!)}
+                                                    className="size-7 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center hover:bg-blue-100"
+                                                    title="Lihat Berkas"
+                                                >
+                                                    <FileText className="size-3.5" />
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => handleEditTugasClick(item)}
+                                                className="size-7 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-blue-700 flex items-center justify-center"
+                                                title="Edit"
+                                            >
+                                                <Pencil className="size-3" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteClick(item.id)}
+                                                className="size-7 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-rose-700 flex items-center justify-center"
+                                                title="Hapus"
+                                            >
+                                                <Trash2 className="size-3" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Pagination */}
+                    <div className="p-4 border-t border-slate-100">
+                        <CustomPagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                            totalData={totalData}
+                            limit={limit}
+                            onLimitChange={handleLimitChange}
+                            itemName="tugas"
+                        />
+                    </div>
+
+                </div>
+            </div>
+
+            {/* Modal Tambah/Edit Tugas */}
             <FormTugasModal
                 isOpen={isFormModalOpen}
                 onClose={() => setIsFormModalOpen(false)}
@@ -329,18 +466,20 @@ export default function PemantauanTugasPage() {
 
             {/* Alert Dialog Hapus */}
             <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-                <AlertDialogContent>
+                <AlertDialogContent className="rounded-3xl border-slate-200">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Hapus Tugas?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Tindakan ini tidak dapat dibatalkan. Tugas ini akan dihapus secara permanen dari server.
+                        <AlertDialogTitle className="text-slate-900 font-bold">Hapus Tugas Organisasi?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-xs text-slate-500">
+                            Tindakan ini tidak dapat dibatalkan. Tugas ini akan dihapus secara permanen dari basis data.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isDeleting}>Batal</AlertDialogCancel>
+                    <AlertDialogFooter className="pt-2">
+                        <AlertDialogCancel disabled={isDeleting} className="rounded-full text-xs font-bold">
+                            Batal
+                        </AlertDialogCancel>
                         <AlertDialogAction
                             onClick={confirmDelete}
-                            className="bg-red-600 hover:bg-red-700"
+                            className="bg-rose-600 hover:bg-rose-700 text-white rounded-full text-xs font-bold"
                             disabled={isDeleting}
                         >
                             {isDeleting ? "Menghapus..." : "Hapus Tugas"}

@@ -5,16 +5,19 @@ import {
     Search,
     Plus,
     Pencil,
-    Eye,
     Trash2,
     CheckCircle2,
     Users,
     Calendar,
-    Lightbulb
+    Megaphone,
+    Building2,
+    Globe,
+    Radio
 } from "lucide-react"
+import { format } from "date-fns"
+import { id as localeID } from "date-fns/locale"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { CustomPagination } from "@/components/CustomPagination"
 import {
     Table,
     TableBody,
@@ -23,12 +26,6 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { Card, CardContent } from "@/components/ui/card"
-import { format } from "date-fns"
-import { id as localeID } from "date-fns/locale"
-
-import { CustomPagination } from "@/components/CustomPagination"
-
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal"
 import { FormPengumumanModal, PengumumanData } from "@/components/FormPengumumanModal"
 import { getAnnouncements, deleteAnnouncement, Announcement, AnnouncementStatistik } from "@/lib/api/announcements"
@@ -71,19 +68,20 @@ export default function PusatPengumumanPage() {
                 setTotalPages(response.data.pagination?.total_page || 1)
                 setTotalData(response.data.pagination?.total_data || 0)
             } else {
-                if (response?.message === "User tidak terautentikasi" ||
+                if (
+                    response?.message === "User tidak terautentikasi" ||
                     response?.message === "Role tidak ditemukan" ||
                     response?.message?.includes("Token tidak valid") ||
-                    response?.message?.includes("kadal")) {
+                    response?.message?.includes("kadal")
+                ) {
                     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => { });
                     window.location.href = '/'
                     return;
                 }
                 setError(response?.message || "Gagal mengambil data")
             }
-        } catch (err: any) {
+        } catch {
             setError("Gagal memuat data pengumuman")
-            console.error(err)
         } finally {
             setIsLoading(false)
         }
@@ -118,7 +116,7 @@ export default function PusatPengumumanPage() {
     }
 
     const handleSavePengumuman = async () => {
-        toast.success(formModeData?.id ? "Pengumuman Diperbarui" : "Pengumuman Berhasil Dibuat")
+        toast.success(formModeData?.id ? "Pengumuman berhasil diperbarui" : "Pengumuman berhasil dipublikasikan")
         fetchAnnouncements()
         setIsFormModalOpen(false)
     }
@@ -136,13 +134,12 @@ export default function PusatPengumumanPage() {
             const id = parseInt(parts[parts.length - 1])
             const response = await deleteAnnouncement(id)
             if (response.success) {
-                toast.success("Pengumuman Dihapus")
+                toast.success("Pengumuman berhasil dihapus")
                 fetchAnnouncements()
             } else {
                 toast.error(response.message || "Gagal menghapus pengumuman")
             }
-        } catch (err) {
-            console.error(err)
+        } catch {
             toast.error("Gagal menghapus pengumuman")
         } finally {
             setIsDeleteModalOpen(false)
@@ -150,176 +147,195 @@ export default function PusatPengumumanPage() {
     }
 
     return (
-        <div className="flex flex-col gap-6 p-1">
-            {/* Header Halaman & Tombol Aksi */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                    <h1 className="text-2xl font-bold tracking-tight">Pusat Pengumuman</h1>
-                    <p className="text-muted-foreground text-sm">
-                        Kelola dan publikasikan informasi resmi kepada seluruh pegawai SIOPIK.
+        <div className="flex flex-col gap-8 max-w-7xl mx-auto p-1 sm:p-2 selection:bg-blue-600 selection:text-white">
+            
+            {/* Header: Eyebrow + Title + Actions */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-4 border-b border-slate-200/80">
+                <div className="space-y-2">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-[11px] font-semibold text-slate-700">
+                        <Building2 className="size-3.5 text-slate-500" />
+                        <span>Saluran Informasi & Surat Edaran</span>
+                        <span className="text-slate-400">•</span>
+                        <span className="font-mono text-slate-600">Kelurahan Sukanegla</span>
+                    </div>
+
+                    <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 leading-none">
+                        Pusat Pengumuman
+                    </h1>
+                    <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+                        Publikasi informasi resmi, edaran dinas, dan instruksi pimpinan kepada seluruh aparatur kelurahan.
                     </p>
                 </div>
-                <Button
-                    className="w-full sm:w-auto flex items-center gap-2 bg-blue-600 hover:bg-blue-700 shadow-sm shrink-0 text-white"
-                    onClick={handleCreateNewClick}
-                >
-                    <Plus className="size-4" />
-                    <span>Buat Pengumuman Baru</span>
-                </Button>
+
+                {/* Island Actions (Add Announcement Button) */}
+                <div className="flex items-center gap-2.5">
+                    <button
+                        onClick={handleCreateNewClick}
+                        className="group inline-flex items-center gap-3 pl-5 pr-2 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-md text-xs font-bold transition-all duration-300 active:scale-[0.98] cursor-pointer"
+                    >
+                        <span>Buat Pengumuman</span>
+                        <div className="size-6 rounded-full bg-white/15 flex items-center justify-center transition-all duration-300 group-hover:rotate-90 group-hover:bg-white/25">
+                            <Plus className="size-3.5" />
+                        </div>
+                    </button>
+                </div>
             </div>
 
-            {/* Widget Statistik */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="shadow-sm border-muted-foreground/10">
-                    <CardContent className="p-6 flex items-center gap-4">
-                        <div className="size-14 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center shrink-0">
-                            <CheckCircle2 className="size-7 text-green-600 dark:text-green-500" />
+            {/* Asymmetrical Bento Header Stats & Search */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+                
+                {/* Metric Tile: Total Pengumuman Aktif (4 Cols) */}
+                <div className="md:col-span-4 rounded-[1.75rem] bg-slate-100/90 border border-slate-200/90 p-1.5 shadow-sm">
+                    <div className="rounded-[calc(1.75rem-0.375rem)] bg-white p-5 flex items-center justify-between shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
+                        <div className="space-y-1">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                Siaran Berjalan
+                            </span>
+                            <h3 className="text-sm font-bold text-slate-900">Pengumuman Aktif</h3>
+                            <p className="text-[11px] text-slate-500">Tampil di aplikasi mobile pegawai</p>
                         </div>
-                        <div className="flex flex-col">
-                            <span className="text-sm font-medium text-muted-foreground">Aktif Saat Ini</span>
-                            <span className="text-3xl font-bold text-foreground">{stats.aktif}</span>
+                        <div className="text-right">
+                            <div className="text-3xl font-extrabold text-emerald-700 font-mono tracking-tight tabular-nums">
+                                {stats.aktif}
+                            </div>
+                            <span className="text-[10px] text-slate-400">Siaran</span>
                         </div>
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* Card Tabel Data & Filter */}
-            <Card className="shadow-sm border-muted-foreground/10 overflow-hidden flex flex-col pt-6">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-6 mb-6">
-                    <div className="relative w-full md:max-w-md">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Cari judul pengumuman..."
-                            className="pl-9 h-10 w-full"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                        />
-                    </div>
-                    <div className="flex items-center gap-3 w-full md:w-auto">
-                        <Button variant="outline" className="h-10 flex items-center gap-2 shrink-0">
-                            <Calendar className="size-4" />
-                            <span>Urutkan</span>
-                        </Button>
                     </div>
                 </div>
 
-                <div className="overflow-x-auto border-t">
-                    <Table>
-                        <TableHeader className="bg-muted/30">
-                            <TableRow>
-                                <TableHead className="min-w-[300px] pl-6">JUDUL PENGUMUMAN</TableHead>
-                                <TableHead className="min-w-[150px]">TANGGAL PUBLISH</TableHead>
-                                <TableHead className="min-w-[180px]">AUDIENCE</TableHead>
-                                <TableHead className="text-right min-w-[120px] pr-6">AKSI</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {isLoading ? (
+                {/* Search Bar (8 Cols) */}
+                <div className="md:col-span-8 relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                    <input
+                        className="w-full h-12 pl-11 pr-4 bg-white rounded-full border border-slate-200 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 shadow-sm transition-all"
+                        placeholder="Cari judul pengumuman atau kata kunci edaran..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
+                </div>
+
+            </div>
+
+            {/* Main Table: Double-Bezel Hardware Architecture */}
+            <div className="rounded-[2rem] bg-slate-100/90 border border-slate-200/90 p-2 shadow-sm">
+                <div className="rounded-[calc(2rem-0.5rem)] bg-white overflow-hidden shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
+                    
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader className="bg-slate-50/80 border-b border-slate-100">
                                 <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center">
-                                        Memuat data...
-                                    </TableCell>
+                                    <TableHead className="w-16 text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">NO</TableHead>
+                                    <TableHead className="min-w-[320px] text-[11px] font-bold uppercase tracking-wider text-slate-500">JUDUL & ISI PENGUMUMAN</TableHead>
+                                    <TableHead className="min-w-[160px] text-[11px] font-bold uppercase tracking-wider text-slate-500">TANGGAL PUBLIKASI</TableHead>
+                                    <TableHead className="min-w-[140px] text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">TARGET AUDIENS</TableHead>
+                                    <TableHead className="text-right min-w-[120px] text-[11px] font-bold uppercase tracking-wider text-slate-500">AKSI</TableHead>
                                 </TableRow>
-                            ) : (announcements?.length ?? 0) === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center">
-                                        {error || "Tidak ada pengumuman yang ditemukan."}
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                announcements?.map((item) => (
-                                    <TableRow key={item.id_pengumuman} className="hover:bg-muted/30 transition-colors">
-                                        <TableCell className="pl-6">
-                                            <div className="flex flex-col py-1">
-                                                <span className="font-bold text-[15px] text-foreground leading-tight mb-1">
-                                                    {item.judul}
-                                                </span>
-                                                <span className="text-xs font-mono text-muted-foreground">
-                                                    ID: {item.id_pengumuman}
-                                                </span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-sm font-medium text-foreground/80">
-                                            {format(new Date(item.tanggal), "dd MMM yyyy", { locale: localeID })}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2 text-muted-foreground bg-muted/50 w-fit px-2.5 py-1 rounded-md border text-sm">
-                                                <Users className="size-4 shrink-0" />
-                                                <span className="font-medium text-foreground/80">{item.audience}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-right pr-6">
-                                            <div className="flex items-center justify-end gap-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="size-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                                                    onClick={() => toast(item.judul, { description: item.pesan })}
-                                                >
-                                                    <Eye className="size-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="size-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/30"
-                                                    onClick={() => handleEditClick(item)}
-                                                >
-                                                    <Pencil className="size-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="size-8 text-muted-foreground hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
-                                                    onClick={() => handleDeleteClick(item)}
-                                                >
-                                                    <Trash2 className="size-4" />
-                                                </Button>
+                            </TableHeader>
+                            <TableBody className="divide-y divide-slate-100">
+                                {isLoading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="h-32 text-center">
+                                            <div className="flex flex-col items-center justify-center gap-2">
+                                                <div className="size-6 animate-spin rounded-full border-2 border-slate-300 border-t-blue-700" />
+                                                <span className="text-xs font-semibold text-slate-500">Memuat pengumuman...</span>
                                             </div>
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
+                                ) : announcements.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="h-32 text-center text-slate-400">
+                                            <div className="space-y-1">
+                                                <Megaphone className="size-6 mx-auto opacity-30" />
+                                                <p className="text-xs font-medium">{error || "Belum ada pengumuman yang dibuat."}</p>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    announcements.map((item, index) => (
+                                        <TableRow key={item.id_pengumuman} className="hover:bg-slate-50/60 transition-colors group">
+                                            <TableCell className="text-center text-xs font-mono text-slate-400">
+                                                {(currentPage - 1) * limit + index + 1}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="space-y-1 py-1 max-w-[420px]">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-bold text-slate-900 block truncate" title={item.judul}>
+                                                            {item.judul}
+                                                        </span>
+                                                        <span className="text-[9px] font-mono text-slate-400 px-1.5 py-0.5 rounded bg-slate-100">
+                                                            {item.id_pengumuman}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed">
+                                                        {item.pesan}
+                                                    </p>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-xs font-mono text-slate-700">
+                                                {format(new Date(item.tanggal), "dd MMM yyyy, HH:mm", { locale: localeID })}
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 inline-flex items-center gap-1.5">
+                                                    <Users className="size-3" />
+                                                    <span>{item.audience || "Semua Pegawai"}</span>
+                                                </span>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <button
+                                                        onClick={() => handleEditClick(item)}
+                                                        className="size-8 rounded-xl bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-700 inline-flex items-center justify-center transition-colors cursor-pointer"
+                                                        title="Edit Pengumuman"
+                                                    >
+                                                        <Pencil className="size-3.5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteClick(item)}
+                                                        className="size-8 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 inline-flex items-center justify-center transition-colors cursor-pointer"
+                                                        title="Hapus Pengumuman"
+                                                    >
+                                                        <Trash2 className="size-3.5" />
+                                                    </button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
 
-                <CustomPagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                    totalData={totalData}
-                    limit={limit}
-                    onLimitChange={handleLimitChange}
-                    itemName="pengumuman"
-                />
-            </Card>
+                    {/* Pagination Bar */}
+                    <div className="p-4 border-t border-slate-100">
+                        <CustomPagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                            totalData={totalData}
+                            limit={limit}
+                            onLimitChange={handleLimitChange}
+                            itemName="pengumuman"
+                        />
+                    </div>
 
-            {/* Bagian Tips */}
-            <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-5 flex flex-col sm:flex-row gap-4 items-start mb-4">
-                <div className="size-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center shrink-0">
-                    <Lightbulb className="size-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="flex flex-col gap-1">
-                    <h3 className="font-semibold text-blue-900 dark:text-blue-300">Tips Pengelolaan Pengumuman</h3>
-                    <p className="text-sm text-blue-700 dark:text-blue-400/80 leading-relaxed">
-                        Pengumuman yang dibuat akan langsung muncul di dashboard utama seluruh pegawai yang menjadi target audiens. Pastikan isi pengumuman sudah benar sebelum mempublikasikannya.
-                    </p>
                 </div>
             </div>
 
-            <DeleteConfirmModal
-                isOpen={isDeleteModalOpen}
-                onClose={() => setIsDeleteModalOpen(false)}
-                onConfirm={handleConfirmDelete}
-                itemName={selectedPengumuman?.judul || ""}
-            />
-
+            {/* Modals */}
             <FormPengumumanModal
                 isOpen={isFormModalOpen}
                 onClose={() => setIsFormModalOpen(false)}
                 pengumumanData={formModeData}
                 onSave={handleSavePengumuman}
             />
+
+            <DeleteConfirmModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                itemName={selectedPengumuman?.judul || "Pengumuman"}
+            />
+
         </div>
     )
 }

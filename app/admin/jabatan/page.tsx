@@ -6,10 +6,12 @@ import {
     Plus,
     Pencil,
     Trash2,
-    Briefcase
+    Briefcase,
+    Building2,
+    Users
 } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
+import { CustomPagination } from "@/components/CustomPagination"
 import {
     Table,
     TableBody,
@@ -18,8 +20,6 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { Card, CardContent } from "@/components/ui/card"
-import { CustomPagination } from "@/components/CustomPagination"
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal"
 import { FormJabatanModal } from "@/components/FormJabatanModal"
 
@@ -29,12 +29,10 @@ import {
     createJabatan,
     updateJabatan,
     Jabatan
-} from "@/lib/api/jabatan"
-
+} from "@/lib/api/positions"
 import { toast } from "sonner"
 
 export default function ManajemenJabatanPage() {
-
     const [loading, setLoading] = React.useState(true)
     const [jabatans, setJabatans] = React.useState<Jabatan[]>([])
     const [searchTerm, setSearchTerm] = React.useState("")
@@ -58,14 +56,16 @@ export default function ManajemenJabatanPage() {
         try {
             const response = await getJabatans()
             if (response.success) {
-                setJabatans(response.data)
-                setTotalData(response.data.length)
-                setTotalPages(Math.ceil(response.data.length / limit))
+                setJabatans(response.data || [])
+                setTotalData(response.data?.length || 0)
+                setTotalPages(Math.ceil((response.data?.length || 0) / limit) || 1)
             } else {
-                if (response.message === "User tidak terautentikasi" ||
+                if (
+                    response.message === "User tidak terautentikasi" ||
                     response.message === "Role tidak ditemukan" ||
                     response.message?.includes("Token tidak valid") ||
-                    response.message?.includes("kadal")) {
+                    response.message?.includes("kadal")
+                ) {
                     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => { });
                     window.location.href = '/'
                     return;
@@ -84,12 +84,11 @@ export default function ManajemenJabatanPage() {
     }, [fetchJabatans])
 
     const filteredJabatans = jabatans
-        .filter(j => j.nama.toLowerCase().includes(searchTerm.toLowerCase()))
+        .filter(j => (j.nama || "").toLowerCase().includes(searchTerm.toLowerCase()))
 
-    // Update total pages when search term changes
     React.useEffect(() => {
         setTotalData(filteredJabatans.length)
-        setTotalPages(Math.ceil(filteredJabatans.length / limit))
+        setTotalPages(Math.ceil(filteredJabatans.length / limit) || 1)
         setCurrentPage(1)
     }, [searchTerm, jabatans.length, limit])
 
@@ -123,7 +122,7 @@ export default function ManajemenJabatanPage() {
             } else {
                 toast.error(res.message || "Gagal menghapus jabatan")
             }
-        } catch (error) {
+        } catch {
             toast.error("Terjadi kesalahan sistem")
         } finally {
             setIsDeleteModalOpen(false)
@@ -148,122 +147,163 @@ export default function ManajemenJabatanPage() {
                 }
             }
             fetchJabatans()
-        } catch (error) {
-            toast.error("Gagal menyimpan data")
+        } catch {
+            toast.error("Gagal menyimpan data jabatan")
         }
     }
 
     return (
-        <div className="flex flex-col gap-6 p-1">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <div className="space-y-1">
-                    <h1 className="text-2xl font-bold tracking-tight">Manajemen Jabatan</h1>
-                    <p className="text-muted-foreground text-sm">
-                        Kelola daftar jabatan yang tersedia di organisasi.
+        <div className="flex flex-col gap-8 max-w-7xl mx-auto p-1 sm:p-2 selection:bg-blue-600 selection:text-white">
+            
+            {/* Header: Eyebrow + Title + Add Button */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-4 border-b border-slate-200/80">
+                <div className="space-y-2">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-[11px] font-semibold text-slate-700">
+                        <Building2 className="size-3.5 text-slate-500" />
+                        <span>Nomenklatur Jabatan Organisasi</span>
+                        <span className="text-slate-400">•</span>
+                        <span className="font-mono text-slate-600">Kelurahan Sukanegla</span>
+                    </div>
+
+                    <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 leading-none">
+                        Manajemen Jabatan
+                    </h1>
+                    <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+                        Daftar formasi dan penamaan jabatan aparatur sipil kelurahan untuk klasifikasi tugas dan laporan kerja.
                     </p>
                 </div>
-                <div className="flex flex-col sm:flex-row items-center gap-2">
-                    <div className="flex items-center w-full sm:w-72 md:w-80 h-10 border border-input rounded-lg bg-background px-3 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
-                        <Search className="size-4 text-muted-foreground shrink-0" />
-                        <input
-                            className="flex h-full w-full bg-transparent px-3 py-1 text-sm outline-none placeholder:text-muted-foreground"
-                            placeholder="Cari nama jabatan..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <Button
-                        className="w-full sm:w-auto h-10 flex items-center gap-2 shrink-0 bg-blue-600 hover:bg-blue-700"
+
+                {/* Island Actions (Add Jabatan Button) */}
+                <div className="flex items-center gap-2.5">
+                    <button
                         onClick={handleAddClick}
+                        className="group inline-flex items-center gap-3 pl-5 pr-2 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-md text-xs font-bold transition-all duration-300 active:scale-[0.98] cursor-pointer"
                     >
-                        <Plus className="size-4" />
                         <span>Tambah Jabatan</span>
-                    </Button>
+                        <div className="size-6 rounded-full bg-white/15 flex items-center justify-center transition-all duration-300 group-hover:rotate-90 group-hover:bg-white/25">
+                            <Plus className="size-3.5" />
+                        </div>
+                    </button>
                 </div>
             </div>
 
-            <Card className="shadow-sm border-muted-foreground/10 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader className="bg-muted/50">
-                            <TableRow>
-                                <TableHead className="w-[100px]">NO</TableHead>
-                                <TableHead>NAMA JABATAN</TableHead>
-                                <TableHead className="text-right">AKSI</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {loading ? (
+            {/* Filter Bar: Search Box */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="relative w-full sm:w-80">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                    <input
+                        className="w-full h-10 pl-10 pr-4 bg-white rounded-full border border-slate-200 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 shadow-sm transition-all"
+                        placeholder="Cari nama jabatan..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+            </div>
+
+            {/* Main Table: Double-Bezel Hardware Architecture */}
+            <div className="rounded-[2rem] bg-slate-100/90 border border-slate-200/90 p-2 shadow-sm">
+                <div className="rounded-[calc(2rem-0.5rem)] bg-white overflow-hidden shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
+                    
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader className="bg-slate-50/80 border-b border-slate-100">
                                 <TableRow>
-                                    <TableCell colSpan={3} className="text-center py-10">
-                                        Memuat data...
-                                    </TableCell>
+                                    <TableHead className="w-16 text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">NO</TableHead>
+                                    <TableHead className="min-w-[320px] text-[11px] font-bold uppercase tracking-wider text-slate-500">NAMA JABATAN FORMAL</TableHead>
+                                    <TableHead className="text-right min-w-[120px] text-[11px] font-bold uppercase tracking-wider text-slate-500">AKSI</TableHead>
                                 </TableRow>
-                            ) : filteredJabatans.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={3} className="text-center py-10">
-                                        Tidak ada data jabatan.
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                paginatedJabatans.map((item, index) => (
-                                    <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
-                                        <TableCell className="font-medium text-sm text-muted-foreground">
-                                            {(currentPage - 1) * limit + index + 1}
-                                        </TableCell>
-                                        <TableCell className="font-semibold text-sm">
-                                            {item.nama}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex items-center justify-end gap-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="size-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                                    onClick={() => handleEditClick(item)}
-                                                >
-                                                    <Pencil className="size-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="size-8 text-muted-foreground hover:text-red-600 hover:bg-red-50"
-                                                    onClick={() => handleDeleteClick(item)}
-                                                >
-                                                    <Trash2 className="size-4" />
-                                                </Button>
+                            </TableHeader>
+                            <TableBody className="divide-y divide-slate-100">
+                                {loading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="h-32 text-center">
+                                            <div className="flex flex-col items-center justify-center gap-2">
+                                                <div className="size-6 animate-spin rounded-full border-2 border-slate-300 border-t-blue-700" />
+                                                <span className="text-xs font-semibold text-slate-500">Memuat data jabatan...</span>
                                             </div>
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
+                                ) : paginatedJabatans.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="h-32 text-center text-slate-400">
+                                            <div className="space-y-1">
+                                                <Briefcase className="size-6 mx-auto opacity-30" />
+                                                <p className="text-xs font-medium">Tidak ada data jabatan yang cocok.</p>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    paginatedJabatans.map((item, index) => (
+                                        <TableRow key={item.id} className="hover:bg-slate-50/60 transition-colors group">
+                                            <TableCell className="text-center text-xs font-mono text-slate-400">
+                                                {(currentPage - 1) * limit + index + 1}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="size-8 rounded-xl bg-blue-50 text-blue-700 border border-blue-100 flex items-center justify-center">
+                                                        <Briefcase className="size-3.5" />
+                                                    </div>
+                                                    <span className="text-xs font-bold text-slate-900">
+                                                        {item.nama}
+                                                    </span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <button
+                                                        onClick={() => handleEditClick(item)}
+                                                        className="size-8 rounded-xl bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-700 inline-flex items-center justify-center transition-colors cursor-pointer"
+                                                        title="Edit Jabatan"
+                                                    >
+                                                        <Pencil className="size-3.5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteClick(item)}
+                                                        className="size-8 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 inline-flex items-center justify-center transition-colors cursor-pointer"
+                                                        title="Hapus Jabatan"
+                                                    >
+                                                        <Trash2 className="size-3.5" />
+                                                    </button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+
+                    {/* Pagination Bar */}
+                    <div className="p-4 border-t border-slate-100">
+                        <CustomPagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                            totalData={totalData}
+                            limit={limit}
+                            onLimitChange={handleLimitChange}
+                            itemName="jabatan"
+                        />
+                    </div>
+
                 </div>
-                <CustomPagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                    totalData={totalData}
-                    limit={limit}
-                    onLimitChange={handleLimitChange}
-                    itemName="jabatan"
-                />
-            </Card>
+            </div>
 
-            <DeleteConfirmModal
-                isOpen={isDeleteModalOpen}
-                onClose={() => setIsDeleteModalOpen(false)}
-                onConfirm={handleConfirmDelete}
-                itemName={selectedJabatan?.nama || ""}
-            />
-
+            {/* Modals */}
             <FormJabatanModal
                 isOpen={isFormModalOpen}
                 onClose={() => setIsFormModalOpen(false)}
                 jabatanData={formModeData}
                 onSave={handleSave}
             />
+
+            <DeleteConfirmModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                itemName={selectedJabatan?.nama || "Jabatan"}
+            />
+
         </div>
     )
 }

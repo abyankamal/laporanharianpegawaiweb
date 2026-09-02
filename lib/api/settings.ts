@@ -66,3 +66,43 @@ export async function updateHoliday(id: number, payload: Partial<Holiday>): Prom
     })
     return res.json()
 }
+
+export interface GeofencingSettings {
+    lokasi_lat: string
+    lokasi_long: string
+    radius_meter: number
+}
+
+export async function getGeofencing(): Promise<BaseResponse<GeofencingSettings>> {
+    const res = await fetch("/api/admin/settings/geofencing")
+    return res.json()
+}
+
+export async function updateGeofencing(payload: GeofencingSettings): Promise<BaseResponse<GeofencingSettings>> {
+    const res = await fetch("/api/admin/settings/geofencing", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+    })
+    return res.json()
+}
+
+export interface SupervisorLurahSettings {
+    nama: string
+    nip: string
+}
+
+export async function getSupervisorLurah(): Promise<BaseResponse<SupervisorLurahSettings>> {
+    const res = await fetch("/api/admin/settings/supervisor-lurah")
+    return res.json()
+}
+
+export async function updateSupervisorLurah(payload: SupervisorLurahSettings): Promise<BaseResponse<SupervisorLurahSettings>> {
+    const res = await fetch("/api/admin/settings/supervisor-lurah", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+    })
+    return res.json()
+}
+

@@ -1,15 +1,26 @@
 "use client"
 
 import * as React from "react"
-import { Clock, Save, Trash2, Plus, Pencil } from "lucide-react"
+import {
+    Clock,
+    Save,
+    Trash2,
+    Plus,
+    Pencil,
+    MapPin,
+    ShieldCheck,
+    Building2,
+    Calendar,
+    CheckCircle2,
+    Sliders,
+    Sparkles
+} from "lucide-react"
 import { format } from "date-fns"
 import { id as localeID } from "date-fns/locale"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
 import {
     Table,
     TableBody,
@@ -25,28 +36,41 @@ import {
     updateWorkHour,
     getHolidays,
     deleteHoliday,
-    WorkHour,
+    getGeofencing,
+    updateGeofencing,
+    getSupervisorLurah,
+    updateSupervisorLurah,
     Holiday,
 } from "@/lib/api/settings"
 import { toast } from "sonner"
-
 import { FormHariLiburModal } from "@/components/FormHariLiburModal"
 
 export default function PengaturanPage() {
-    // State for Work Hours
-    const [id, setId] = React.useState<number | null>(null)
+    // Work Hours
     const [jamMasukNormal, setJamMasukNormal] = React.useState("07:30")
     const [jamPulangNormal, setJamPulangNormal] = React.useState("16:00")
     const [jamMasukJumat, setJamMasukJumat] = React.useState("07:30")
     const [jamPulangJumat, setJamPulangJumat] = React.useState("16:30")
+    const [savingJamKerja, setSavingJamKerja] = React.useState(false)
 
-    // State for Holidays
+    // Geofencing
+    const [lokasiLat, setLokasiLat] = React.useState("-6.914744")
+    const [lokasiLong, setLokasiLong] = React.useState("107.609810")
+    const [radiusMeter, setRadiusMeter] = React.useState(100)
+    const [savingGeofencing, setSavingGeofencing] = React.useState(false)
+
+    // Supervisor Lurah
+    const [namaSupervisor, setNamaSupervisor] = React.useState("")
+    const [nipSupervisor, setNipSupervisor] = React.useState("")
+    const [savingSupervisor, setSavingSupervisor] = React.useState(false)
+
+    // Holidays
     const [holidays, setHolidays] = React.useState<Holiday[]>([])
     const [isLoadingHolidays, setIsLoadingHolidays] = React.useState(true)
     const [currentPage, setCurrentPage] = React.useState(1)
-    const [limit] = React.useState(5) // Smaller limit for settings page
+    const [limit] = React.useState(5)
 
-    // State for Holiday Modal
+    // Holiday Modal
     const [isHolidayModalOpen, setIsHolidayModalOpen] = React.useState(false)
     const [selectedHoliday, setSelectedHoliday] = React.useState<Holiday | null>(null)
 
@@ -54,23 +78,34 @@ export default function PengaturanPage() {
         try {
             const whRes = await getWorkHour()
             if (whRes.status === "success" && whRes.data) {
-                setId(whRes.data.id)
-                setJamMasukNormal(whRes.data.jam_masuk)
-                setJamPulangNormal(whRes.data.jam_pulang)
-                setJamMasukJumat(whRes.data.jam_masuk_jumat)
-                setJamPulangJumat(whRes.data.jam_pulang_jumat)
+                setJamMasukNormal(whRes.data.jam_masuk || "07:30")
+                setJamPulangNormal(whRes.data.jam_pulang || "16:00")
+                setJamMasukJumat(whRes.data.jam_masuk_jumat || "07:30")
+                setJamPulangJumat(whRes.data.jam_pulang_jumat || "16:30")
+            }
+
+            const geoRes = await getGeofencing().catch(() => null)
+            if (geoRes && (geoRes.status === "success" || (geoRes as any).success) && geoRes.data) {
+                if (geoRes.data.lokasi_lat) setLokasiLat(geoRes.data.lokasi_lat)
+                if (geoRes.data.lokasi_long) setLokasiLong(geoRes.data.lokasi_long)
+                if (geoRes.data.radius_meter) setRadiusMeter(geoRes.data.radius_meter)
+            }
+
+            const supRes = await getSupervisorLurah().catch(() => null)
+            if (supRes && (supRes.status === "success" || (supRes as any).success) && supRes.data) {
+                if (supRes.data.nama) setNamaSupervisor(supRes.data.nama)
+                if (supRes.data.nip) setNipSupervisor(supRes.data.nip)
             }
 
             setIsLoadingHolidays(true)
             const hRes = await getHolidays()
             if (hRes.status === "success") {
-                setHolidays(hRes.data)
-            } else if (hRes.message === "User tidak terautentikasi" ||
+                setHolidays(hRes.data || [])
+            } else if (
+                hRes.message === "User tidak terautentikasi" ||
                 hRes.message === "Role tidak ditemukan" ||
                 hRes.message?.includes("Token tidak valid") ||
-                hRes.message?.includes("kadal") ||
-                (whRes as any).message?.includes("Token tidak valid") ||
-                (whRes as any).message?.includes("kadal")
+                (whRes as any)?.message?.includes("Token tidak valid")
             ) {
                 await fetch('/api/auth/logout', { method: 'POST' }).catch(() => { });
                 window.location.href = '/'
@@ -89,6 +124,7 @@ export default function PengaturanPage() {
 
     const handleSaveJamKerja = async (e: React.FormEvent) => {
         e.preventDefault()
+        setSavingJamKerja(true)
         try {
             const res = await updateWorkHour({
                 jam_masuk: jamMasukNormal,
@@ -96,14 +132,56 @@ export default function PengaturanPage() {
                 jam_masuk_jumat: jamMasukJumat,
                 jam_pulang_jumat: jamPulangJumat,
             })
-            if (res.status === "success") {
-                toast.success("Jam kerja berhasil disimpan!")
+            if (res.status === "success" || (res as any).success) {
+                toast.success("Jam kerja operasional berhasil disimpan")
             } else {
                 toast.error(res.message || "Gagal menyimpan jam kerja")
             }
-        } catch (error) {
-            console.error(error)
+        } catch {
             toast.error("Terjadi kesalahan saat menyimpan jam kerja")
+        } finally {
+            setSavingJamKerja(false)
+        }
+    }
+
+    const handleSaveGeofencing = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setSavingGeofencing(true)
+        try {
+            const res = await updateGeofencing({
+                lokasi_lat: lokasiLat,
+                lokasi_long: lokasiLong,
+                radius_meter: Number(radiusMeter),
+            })
+            if (res.status === "success" || (res as any).success) {
+                toast.success("Pengaturan geofencing berhasil disimpan")
+            } else {
+                toast.error(res.message || "Gagal menyimpan geofencing")
+            }
+        } catch {
+            toast.error("Terjadi kesalahan saat menyimpan geofencing")
+        } finally {
+            setSavingGeofencing(false)
+        }
+    }
+
+    const handleSaveSupervisor = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setSavingSupervisor(true)
+        try {
+            const res = await updateSupervisorLurah({
+                nama: namaSupervisor,
+                nip: nipSupervisor,
+            })
+            if (res.status === "success" || (res as any).success) {
+                toast.success("Data supervisor lurah berhasil disimpan")
+            } else {
+                toast.error(res.message || "Gagal menyimpan supervisor lurah")
+            }
+        } catch {
+            toast.error("Terjadi kesalahan saat menyimpan supervisor lurah")
+        } finally {
+            setSavingSupervisor(false)
         }
     }
 
@@ -112,14 +190,13 @@ export default function PengaturanPage() {
 
         try {
             const res = await deleteHoliday(id)
-            if (res.status === "success") {
+            if (res.status === "success" || (res as any).success) {
                 toast.success("Hari libur berhasil dihapus")
                 fetchSettings()
             } else {
                 toast.error(res.message || "Gagal menghapus hari libur")
             }
-        } catch (error) {
-            console.error(error)
+        } catch {
             toast.error("Terjadi kesalahan saat menghapus hari libur")
         }
     }
@@ -147,204 +224,352 @@ export default function PengaturanPage() {
     )
 
     return (
-        <div className="flex flex-col gap-6 p-1">
-            {/* Header Halaman */}
-            <div className="space-y-1">
-                <h1 className="text-2xl font-bold tracking-tight">Kelola Jam Kerja & Hari Libur</h1>
-                <p className="text-muted-foreground text-sm">
-                    Atur konfigurasi waktu operasional dan kalender libur instansi.
-                </p>
+        <div className="flex flex-col gap-8 max-w-7xl mx-auto p-1 sm:p-2 selection:bg-blue-600 selection:text-white">
+            
+            {/* Header: Eyebrow + Title */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-4 border-b border-slate-200/80">
+                <div className="space-y-2">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-[11px] font-semibold text-slate-700">
+                        <Building2 className="size-3.5 text-slate-500" />
+                        <span>Konfigurasi & Parameter Sistem</span>
+                        <span className="text-slate-400">•</span>
+                        <span className="font-mono text-slate-600">Kelurahan Sukanegla</span>
+                    </div>
+
+                    <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 leading-none">
+                        Pengaturan Sistem
+                    </h1>
+                    <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+                        Atur parameter jam dinas operasional, batas radius geofencing presensi, penandatangan surat atasan, dan kalender libur.
+                    </p>
+                </div>
             </div>
 
-            {/* Card 1: Pengaturan Jam Kerja */}
-            <Card className="shadow-sm border-muted-foreground/10 overflow-hidden">
-                <CardContent className="p-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-8">
-                        {/* Kolom Kiri (Ilustrasi) */}
-                        <div className="bg-slate-900 rounded-xl flex items-center justify-center p-8 min-h-[250px] relative overflow-hidden">
-                            {/* Decorative elements behind the icon */}
-                            <div className="absolute top-0 right-0 p-4 opacity-10">
-                                <div className="w-24 h-24 rounded-full border-4 border-white/50" />
+            {/* Asymmetrical Bento Configuration Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                
+                {/* 1. Jam Kerja Kantor (7 Cols) */}
+                <div className="lg:col-span-7 rounded-[2rem] bg-slate-100/90 border border-slate-200/90 p-2 shadow-sm">
+                    <div className="h-full rounded-[calc(2rem-0.5rem)] bg-white p-6 sm:p-7 flex flex-col justify-between space-y-6 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
+                        
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="size-10 rounded-2xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center">
+                                    <Clock className="size-5" />
+                                </div>
+                                <div>
+                                    <h2 className="text-base font-bold text-slate-900">Jam Kerja Operasional</h2>
+                                    <p className="text-xs text-slate-500">Validasi otomatis laporan tepat waktu vs lembur</p>
+                                </div>
                             </div>
-                            <div className="absolute bottom-[-20%] left-[-10%] w-40 h-40 rounded-full bg-blue-500/20 blur-3xl" />
-
-                            <Clock className="size-32 text-blue-400 opacity-80" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                                Resmi
+                            </span>
                         </div>
 
-                        {/* Kolom Kanan (Formulir) */}
-                        <div className="flex flex-col justify-center">
-                            <div className="mb-6">
-                                <h2 className="text-lg font-bold text-foreground">Pengaturan Jam Kerja</h2>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    Atur batas waktu laporan harian pegawai agar sistem dapat melakukan validasi kehadiran otomatis.
-                                </p>
-                            </div>
-
-                            <form onSubmit={handleSaveJamKerja} className="space-y-5">
-                                {/* Baris 1: Senin - Kamis */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="space-y-2 flex flex-col">
-                                        <Label htmlFor="jamMasukNormal">Jam Masuk (Senin-Kamis)</Label>
+                        <form onSubmit={handleSaveJamKerja} className="space-y-5">
+                            {/* Hari Senin - Kamis */}
+                            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+                                <span className="text-xs font-bold text-slate-900 block">Senin – Kamis</span>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <Label htmlFor="jamMasukNormal" className="text-[11px] font-semibold text-slate-600">Jam Masuk</Label>
                                         <Input
                                             id="jamMasukNormal"
                                             type="time"
                                             value={jamMasukNormal}
                                             onChange={(e) => setJamMasukNormal(e.target.value)}
+                                            className="h-10 rounded-xl bg-white border-slate-200 text-xs font-mono"
                                             required
                                         />
                                     </div>
-                                    <div className="space-y-2 flex flex-col">
-                                        <Label htmlFor="jamPulangNormal">Jam Pulang (Senin-Kamis)</Label>
+                                    <div className="space-y-1">
+                                        <Label htmlFor="jamPulangNormal" className="text-[11px] font-semibold text-slate-600">Jam Pulang</Label>
                                         <Input
                                             id="jamPulangNormal"
                                             type="time"
                                             value={jamPulangNormal}
                                             onChange={(e) => setJamPulangNormal(e.target.value)}
+                                            className="h-10 rounded-xl bg-white border-slate-200 text-xs font-mono"
                                             required
                                         />
                                     </div>
                                 </div>
+                            </div>
 
-                                {/* Baris 2: Jumat Khusus */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="space-y-2 flex flex-col">
-                                        <Label htmlFor="jamMasukJumat">Jam Masuk (Jumat)</Label>
+                            {/* Hari Jumat Khusus */}
+                            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+                                <span className="text-xs font-bold text-slate-900 block">Jumat (Jadwal Khusus)</span>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <Label htmlFor="jamMasukJumat" className="text-[11px] font-semibold text-slate-600">Jam Masuk</Label>
                                         <Input
                                             id="jamMasukJumat"
                                             type="time"
                                             value={jamMasukJumat}
                                             onChange={(e) => setJamMasukJumat(e.target.value)}
+                                            className="h-10 rounded-xl bg-white border-slate-200 text-xs font-mono"
                                             required
                                         />
                                     </div>
-                                    <div className="space-y-2 flex flex-col">
-                                        <Label htmlFor="jamPulangJumat">Jam Pulang (Jumat)</Label>
+                                    <div className="space-y-1">
+                                        <Label htmlFor="jamPulangJumat" className="text-[11px] font-semibold text-slate-600">Jam Pulang</Label>
                                         <Input
                                             id="jamPulangJumat"
                                             type="time"
                                             value={jamPulangJumat}
                                             onChange={(e) => setJamPulangJumat(e.target.value)}
+                                            className="h-10 rounded-xl bg-white border-slate-200 text-xs font-mono"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={savingJamKerja}
+                                className="group inline-flex items-center gap-2.5 pl-4 pr-1.5 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-md text-xs font-bold transition-all duration-300 active:scale-[0.98] cursor-pointer disabled:opacity-50"
+                            >
+                                <span>{savingJamKerja ? "Menyimpan..." : "Simpan Jam Kerja"}</span>
+                                <div className="size-6 rounded-full bg-white/15 flex items-center justify-center transition-all duration-300 group-hover:bg-white/25">
+                                    <Save className="size-3.5" />
+                                </div>
+                            </button>
+                        </form>
+
+                    </div>
+                </div>
+
+                {/* 2. Geofencing & Supervisor Lurah (5 Cols) */}
+                <div className="lg:col-span-5 grid grid-cols-1 gap-6">
+                    
+                    {/* Geofencing Hardware Card */}
+                    <div className="rounded-[2rem] bg-slate-100/90 border border-slate-200/90 p-2 shadow-sm">
+                        <div className="h-full rounded-[calc(2rem-0.5rem)] bg-white p-6 space-y-4 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
+                            <div className="flex items-center gap-3">
+                                <div className="size-9 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center">
+                                    <MapPin className="size-4" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-900">Geofencing Presensi</h3>
+                                    <p className="text-[11px] text-slate-500">Koordinat titik kantor & radius presensi</p>
+                                </div>
+                            </div>
+
+                            <form onSubmit={handleSaveGeofencing} className="space-y-3">
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-1">
+                                        <Label htmlFor="lokasiLat" className="text-[11px] font-semibold text-slate-600">Latitude</Label>
+                                        <Input
+                                            id="lokasiLat"
+                                            value={lokasiLat}
+                                            onChange={(e) => setLokasiLat(e.target.value)}
+                                            className="h-9 rounded-xl bg-slate-50 border-slate-200 text-xs font-mono"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label htmlFor="lokasiLong" className="text-[11px] font-semibold text-slate-600">Longitude</Label>
+                                        <Input
+                                            id="lokasiLong"
+                                            value={lokasiLong}
+                                            onChange={(e) => setLokasiLong(e.target.value)}
+                                            className="h-9 rounded-xl bg-slate-50 border-slate-200 text-xs font-mono"
                                             required
                                         />
                                     </div>
                                 </div>
 
-                                <div className="pt-2">
-                                    <Button type="submit" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
-                                        <Save className="size-4" />
-                                        <span>Simpan Jam Kerja</span>
-                                    </Button>
+                                <div className="space-y-1">
+                                    <Label htmlFor="radiusMeter" className="text-[11px] font-semibold text-slate-600">Radius Toleransi (Meter)</Label>
+                                    <Input
+                                        id="radiusMeter"
+                                        type="number"
+                                        min="10"
+                                        max="5000"
+                                        value={radiusMeter}
+                                        onChange={(e) => setRadiusMeter(Number(e.target.value))}
+                                        className="h-9 rounded-xl bg-slate-50 border-slate-200 text-xs font-mono"
+                                        required
+                                    />
                                 </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={savingGeofencing}
+                                    className="w-full py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+                                >
+                                    {savingGeofencing ? "Menyimpan..." : "Simpan Geofencing"}
+                                </button>
                             </form>
                         </div>
                     </div>
-                </CardContent>
-            </Card>
 
-            {/* Card 2: Daftar Hari Libur */}
-            <Card className="shadow-sm border-muted-foreground/10 flex flex-col pt-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 mb-6">
-                    <div className="space-y-1">
-                        <h2 className="text-lg font-bold text-foreground">Daftar Hari Libur</h2>
-                        <p className="text-sm text-muted-foreground">Hari libur nasional dan instansi tahun 2026</p>
+                    {/* Supervisor Lurah Hardware Card */}
+                    <div className="rounded-[2rem] bg-slate-100/90 border border-slate-200/90 p-2 shadow-sm">
+                        <div className="h-full rounded-[calc(2rem-0.5rem)] bg-white p-6 space-y-4 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
+                            <div className="flex items-center gap-3">
+                                <div className="size-9 rounded-2xl bg-purple-50 text-purple-700 border border-purple-200 flex items-center justify-center">
+                                    <ShieldCheck className="size-4" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-900">Penandatangan Laporan</h3>
+                                    <p className="text-[11px] text-slate-500">Pejabat Lurah penandatangan dokumen resmi</p>
+                                </div>
+                            </div>
+
+                            <form onSubmit={handleSaveSupervisor} className="space-y-3">
+                                <div className="space-y-1">
+                                    <Label htmlFor="namaSupervisor" className="text-[11px] font-semibold text-slate-600">Nama Pejabat</Label>
+                                    <Input
+                                        id="namaSupervisor"
+                                        value={namaSupervisor}
+                                        onChange={(e) => setNamaSupervisor(e.target.value)}
+                                        className="h-9 rounded-xl bg-slate-50 border-slate-200 text-xs font-medium"
+                                        required
+                                    />
+                                </div>
+
+                                <div className="space-y-1">
+                                    <Label htmlFor="nipSupervisor" className="text-[11px] font-semibold text-slate-600">NIP Pejabat</Label>
+                                    <Input
+                                        id="nipSupervisor"
+                                        value={nipSupervisor}
+                                        onChange={(e) => setNipSupervisor(e.target.value)}
+                                        className="h-9 rounded-xl bg-slate-50 border-slate-200 text-xs font-mono"
+                                        required
+                                    />
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={savingSupervisor}
+                                    className="w-full py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+                                >
+                                    {savingSupervisor ? "Menyimpan..." : "Simpan Penandatangan"}
+                                </button>
+                            </form>
+                        </div>
                     </div>
-                    <Button
-                        className="w-full sm:w-auto flex items-center gap-2 bg-blue-600 hover:bg-blue-700 shadow-sm shrink-0 text-white"
-                        onClick={() => {
-                            setSelectedHoliday(null)
-                            setIsHolidayModalOpen(true)
-                        }}
-                    >
-                        <Plus className="size-4" />
-                        <span>Tambah Hari Libur</span>
-                    </Button>
+
                 </div>
 
-                <div className="overflow-x-auto border-y">
-                    <Table>
-                        <TableHeader className="bg-muted/30">
-                            <TableRow>
-                                <TableHead className="w-[80px] pl-6 text-center">NO</TableHead>
-                                <TableHead className="min-w-[200px]">TANGGAL</TableHead>
-                                <TableHead className="min-w-[300px]">KETERANGAN</TableHead>
-                                <TableHead className="w-[120px] pr-6 text-center">AKSI</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {isLoadingHolidays ? (
+            </div>
+
+            {/* 3. Daftar Hari Libur (Full Width Double-Bezel) */}
+            <div className="rounded-[2rem] bg-slate-100/90 border border-slate-200/90 p-2 shadow-sm">
+                <div className="rounded-[calc(2rem-0.5rem)] bg-white overflow-hidden shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
+                    
+                    <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                            <h3 className="text-base font-bold text-slate-900 tracking-tight">
+                                Kalender Hari Libur Nasional & Instansi
+                            </h3>
+                            <p className="text-xs text-slate-500">
+                                Tanggal libur resmi di mana pegawai tidak diwajibkan melakukan presensi harian
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                setSelectedHoliday(null)
+                                setIsHolidayModalOpen(true)
+                            }}
+                            className="group inline-flex items-center gap-3 pl-5 pr-2 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-md text-xs font-bold transition-all duration-300 active:scale-[0.98] cursor-pointer self-start sm:self-auto"
+                        >
+                            <span>Tambah Libur</span>
+                            <div className="size-6 rounded-full bg-white/15 flex items-center justify-center transition-all duration-300 group-hover:rotate-90 group-hover:bg-white/25">
+                                <Plus className="size-3.5" />
+                            </div>
+                        </button>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader className="bg-slate-50/80 border-b border-slate-100">
                                 <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center">
-                                        Memuat data...
-                                    </TableCell>
+                                    <TableHead className="w-16 text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">NO</TableHead>
+                                    <TableHead className="min-w-[240px] text-[11px] font-bold uppercase tracking-wider text-slate-500">RENTANG TANGGAL</TableHead>
+                                    <TableHead className="min-w-[320px] text-[11px] font-bold uppercase tracking-wider text-slate-500">KETERANGAN HARI LIBUR</TableHead>
+                                    <TableHead className="text-right min-w-[120px] text-[11px] font-bold uppercase tracking-wider text-slate-500">AKSI</TableHead>
                                 </TableRow>
-                            ) : holidays.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center">
-                                        Tidak ada hari libur yang terdaftar.
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                paginatedHolidays.map((item, index) => (
-                                    <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
-                                        <TableCell className="pl-6 text-center font-medium text-foreground/70">
-                                            {(currentPage - 1) * limit + index + 1}
-                                        </TableCell>
-                                        <TableCell className="font-medium text-foreground/80">
-                                            {item.tanggal_mulai === item.tanggal_selesai
-                                                ? format(new Date(item.tanggal_mulai), "dd MMMM yyyy", { locale: localeID })
-                                                : `${format(new Date(item.tanggal_mulai), "dd MMM", { locale: localeID })} - ${format(new Date(item.tanggal_selesai), "dd MMM yyyy", { locale: localeID })}`
-                                            }
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge
-                                                variant="secondary"
-                                                className="bg-red-50 text-red-600 hover:bg-red-50 rounded-md font-medium dark:bg-red-900/20"
-                                            >
-                                                {item.keterangan}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="pr-6 text-center">
-                                            <div className="flex items-center justify-center gap-2">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="size-8 rounded-full text-muted-foreground hover:text-blue-600 hover:bg-blue-50"
-                                                    onClick={() => handleEditHoliday(item)}
-                                                >
-                                                    <Pencil className="size-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="size-8 rounded-full text-muted-foreground hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
-                                                    onClick={() => handleDeleteHoliday(item.id)}
-                                                >
-                                                    <Trash2 className="size-4" />
-                                                </Button>
+                            </TableHeader>
+                            <TableBody className="divide-y divide-slate-100">
+                                {isLoadingHolidays ? (
+                                    <TableRow>
+                                        <TableCell colSpan={4} className="h-32 text-center">
+                                            <div className="flex flex-col items-center justify-center gap-2">
+                                                <div className="size-6 animate-spin rounded-full border-2 border-slate-300 border-t-blue-700" />
+                                                <span className="text-xs font-semibold text-slate-500">Memuat hari libur...</span>
                                             </div>
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
+                                ) : holidays.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={4} className="h-32 text-center text-slate-400">
+                                            <div className="space-y-1">
+                                                <Calendar className="size-6 mx-auto opacity-30" />
+                                                <p className="text-xs font-medium">Tidak ada hari libur yang terdaftar.</p>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    paginatedHolidays.map((item, index) => (
+                                        <TableRow key={item.id} className="hover:bg-slate-50/60 transition-colors group">
+                                            <TableCell className="text-center text-xs font-mono text-slate-400">
+                                                {(currentPage - 1) * limit + index + 1}
+                                            </TableCell>
+                                            <TableCell className="text-xs font-bold text-slate-900 font-mono">
+                                                {item.tanggal_mulai === item.tanggal_selesai
+                                                    ? format(new Date(item.tanggal_mulai), "dd MMMM yyyy", { locale: localeID })
+                                                    : `${format(new Date(item.tanggal_mulai), "dd MMM", { locale: localeID })} – ${format(new Date(item.tanggal_selesai), "dd MMM yyyy", { locale: localeID })}`
+                                                }
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className="text-xs font-medium text-slate-700">
+                                                    {item.keterangan}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <button
+                                                        onClick={() => handleEditHoliday(item)}
+                                                        className="size-8 rounded-xl bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-700 inline-flex items-center justify-center transition-colors cursor-pointer"
+                                                        title="Edit Hari Libur"
+                                                    >
+                                                        <Pencil className="size-3.5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteHoliday(item.id)}
+                                                        className="size-8 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 inline-flex items-center justify-center transition-colors cursor-pointer"
+                                                        title="Hapus Hari Libur"
+                                                    >
+                                                        <Trash2 className="size-3.5" />
+                                                    </button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
 
-                <CustomPagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                    totalData={holidays.length}
-                    limit={limit}
-                    itemName="hari libur"
-                />
+                    {/* Pagination Bar */}
+                    <div className="p-4 border-t border-slate-100">
+                        <CustomPagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                            totalData={holidays.length}
+                            limit={limit}
+                            itemName="hari libur"
+                        />
+                    </div>
 
-                <div className="p-4 text-center">
-                    <p className="text-xs italic text-muted-foreground">
-                        Gunakan tombol di atas untuk menambah data hari libur lainnya.
-                    </p>
                 </div>
-            </Card>
+            </div>
 
             {/* Modal Form Tambah Hari Libur */}
             <FormHariLiburModal
@@ -356,6 +581,7 @@ export default function PengaturanPage() {
                 onSave={handleSaveHoliday}
                 holidayData={selectedHoliday}
             />
+
         </div>
     )
 }

@@ -19,7 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { getJabatans, Jabatan } from "@/lib/api/employees"
+import { getJabatans, Jabatan, KATEGORI_PEGAWAI_LIST } from "@/lib/api/employees"
 
 export interface PegawaiData {
     id?: number
@@ -27,6 +27,7 @@ export interface PegawaiData {
     nama: string
     jabatan?: string
     jabatan_id?: number
+    kategori_pegawai_id?: number
     role: string
 }
 
@@ -41,6 +42,7 @@ const DEFAULT_FORM_DATA = {
     nip: "",
     nama: "",
     jabatan_id: "",
+    kategori_pegawai_id: "",
     role: "",
     password: ""
 }
@@ -85,6 +87,7 @@ export function FormPegawaiModal({
                     nip: pegawaiData.nip,
                     nama: pegawaiData.nama,
                     jabatan_id: pegawaiData.jabatan_id?.toString() || "",
+                    kategori_pegawai_id: pegawaiData.kategori_pegawai_id?.toString() || "",
                     role: pegawaiData.role.toLowerCase(),
                     password: "",
                 })
@@ -145,7 +148,7 @@ export function FormPegawaiModal({
                             />
                         </div>
 
-                        {/* Baris 3: Jabatan & Role */}
+                        {/* Baris 3: Jabatan & Kategori Pegawai */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="jabatan">Jabatan</Label>
@@ -167,23 +170,43 @@ export function FormPegawaiModal({
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="role">Role Akses</Label>
+                                <Label htmlFor="kategori_pegawai">Kategori Pegawai</Label>
                                 <Select
-                                    value={formData.role}
-                                    onValueChange={(val) => handleInputChange("role", val)}
-                                    required
+                                    value={formData.kategori_pegawai_id}
+                                    onValueChange={(val) => handleInputChange("kategori_pegawai_id", val)}
                                 >
-                                    <SelectTrigger id="role">
-                                        <SelectValue placeholder="Pilih Role" />
+                                    <SelectTrigger id="kategori_pegawai">
+                                        <SelectValue placeholder="Pilih Kategori" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="lurah">Lurah</SelectItem>
-                                        <SelectItem value="sekertaris">Sekretaris</SelectItem>
-                                        <SelectItem value="kasi">Kasi</SelectItem>
-                                        <SelectItem value="staf">Staf</SelectItem>
+                                        {KATEGORI_PEGAWAI_LIST.map((k) => (
+                                            <SelectItem key={k.id} value={k.id.toString()}>
+                                                {k.nama_kategori}
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>
+                        </div>
+
+                        {/* Baris 4: Role Akses */}
+                        <div className="space-y-2">
+                            <Label htmlFor="role">Role Akses</Label>
+                            <Select
+                                value={formData.role}
+                                onValueChange={(val) => handleInputChange("role", val)}
+                                required
+                            >
+                                <SelectTrigger id="role">
+                                    <SelectValue placeholder="Pilih Role" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="lurah">Lurah</SelectItem>
+                                    <SelectItem value="sekertaris">Sekretaris</SelectItem>
+                                    <SelectItem value="kasi">Kasi</SelectItem>
+                                    <SelectItem value="staf">Staf</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         {/* Baris 4: Password (Full Width) */}
