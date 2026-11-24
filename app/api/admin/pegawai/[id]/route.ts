@@ -22,7 +22,7 @@ export async function PUT(
             data.success = data.status === "success"
         }
         return NextResponse.json(data, { status: response.status })
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { status: "error", message: "Gagal memperbarui data pegawai" },
             { status: 500 }
@@ -45,7 +45,7 @@ export async function DELETE(
         })
         const data = await response.json()
         return NextResponse.json(data)
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { status: "error", message: "Gagal menghapus data pegawai" },
             { status: 500 }

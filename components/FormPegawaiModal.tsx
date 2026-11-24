@@ -33,10 +33,21 @@ export interface PegawaiData {
     role: string
 }
 
+export interface FormPegawaiSaveData {
+    id?: number
+    nip: string
+    nama: string
+    jabatan_id?: number | string
+    supervisor_id?: number | string | null
+    kategori_pegawai_id?: number | string
+    role: string
+    password?: string
+}
+
 interface FormPegawaiModalProps {
     isOpen: boolean
     onClose: () => void
-    onSave: (data: any) => void
+    onSave: (data: FormPegawaiSaveData) => void
     pegawaiData: PegawaiData | null
 }
 
@@ -126,7 +137,7 @@ export function FormPegawaiModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-125">
                 <DialogHeader>
                     <DialogTitle className="text-xl">
                         {isEditMode ? "Edit Data Pegawai" : "Tambah Pegawai Baru"}

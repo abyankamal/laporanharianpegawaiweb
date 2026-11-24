@@ -3,18 +3,12 @@
 import * as React from "react"
 import {
     Search,
-    Filter,
     Plus,
     Pencil,
     Trash2,
     Users,
-    Check,
     KeyRound,
     Building2,
-    ShieldCheck,
-    UserCheck,
-    Briefcase,
-    Sparkles,
     ArrowRightLeft
 } from "lucide-react"
 
@@ -27,21 +21,9 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuCheckboxItem,
-} from "@/components/ui/dropdown-menu"
-import { cn } from "@/lib/utils"
 
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal"
-import { FormPegawaiModal, PegawaiData } from "@/components/FormPegawaiModal"
+import { FormPegawaiModal, FormPegawaiSaveData, PegawaiData } from "@/components/FormPegawaiModal"
 import { ResetPasswordModal } from "@/components/ResetPasswordModal"
 import { ReassignSupervisorModal } from "@/components/ReassignSupervisorModal"
 
@@ -72,7 +54,7 @@ export default function ManajemenPegawaiPage() {
 
     // Form Modal States
     const [isFormModalOpen, setIsFormModalOpen] = React.useState(false)
-    const [formModeData, setFormModeData] = React.useState<any | null>(null)
+    const [formModeData, setFormModeData] = React.useState<PegawaiData | null>(null)
     const [isResetModalOpen, setIsResetModalOpen] = React.useState(false)
     const [selectedResetPegawai, setSelectedResetPegawai] = React.useState<Employee | null>(null)
     const [isReassignModalOpen, setIsReassignModalOpen] = React.useState(false)
@@ -98,7 +80,8 @@ export default function ManajemenPegawaiPage() {
                 page: currentPage,
                 limit
             })
-            const isSuccess = response.success || (response as any).status === "success"
+            const rawRes = response as unknown as { status?: string; message?: string }
+            const isSuccess = response.success || rawRes.status === "success"
 
             if (isSuccess && response.data) {
                 setEmployees(response.data.list || [])
@@ -106,10 +89,10 @@ export default function ManajemenPegawaiPage() {
                 setTotalPages(response.data.pagination?.total_pages || 1)
             } else {
                 if (
-                    (response as any).message === "User tidak terautentikasi" ||
-                    (response as any).message === "Role tidak ditemukan" ||
-                    (response as any).message?.includes("Token tidak valid") ||
-                    (response as any).message?.includes("kadal")
+                    rawRes.message === "User tidak terautentikasi" ||
+                    rawRes.message === "Role tidak ditemukan" ||
+                    rawRes.message?.includes("Token tidak valid") ||
+                    rawRes.message?.includes("kadal")
                 ) {
                     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => { });
                     window.location.href = '/'
@@ -144,7 +127,7 @@ export default function ManajemenPegawaiPage() {
             nip: item.nip,
             nama: item.nama,
             jabatan: item.jabatan?.nama_jabatan || "",
-            jabatan_id: item.jabatan_id,
+            jabatan_id: item.jabatan_id ?? undefined,
             supervisor_id: item.supervisor_id,
             kategori_pegawai_id: item.kategori_pegawai_id || item.kategori_pegawai?.id,
             role: item.role,
@@ -152,14 +135,14 @@ export default function ManajemenPegawaiPage() {
         setIsFormModalOpen(true)
     }
 
-    const handleSavePegawai = async (data: any) => {
+    const handleSavePegawai = async (data: FormPegawaiSaveData) => {
         try {
             const payload = {
                 nip: data.nip,
                 nama: data.nama,
                 role: data.role.toLowerCase(),
                 jabatan_id: data.jabatan_id ? Number(data.jabatan_id) : undefined,
-                supervisor_id: data.supervisor_id && data.supervisor_id !== "none" ? Number(data.supervisor_id) : undefined,
+                supervisor_id: data.supervisor_id && String(data.supervisor_id) !== "none" ? Number(data.supervisor_id) : undefined,
                 kategori_pegawai_id: data.kategori_pegawai_id ? Number(data.kategori_pegawai_id) : undefined,
                 password: data.password || undefined
             }
@@ -173,8 +156,9 @@ export default function ManajemenPegawaiPage() {
             }
             setIsFormModalOpen(false)
             fetchEmployees()
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || "Gagal menyimpan data pegawai")
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } } }
+            toast.error(err.response?.data?.message || "Gagal menyimpan data pegawai")
         }
     }
 
@@ -198,13 +182,13 @@ export default function ManajemenPegawaiPage() {
     const renderKategoriBadge = (item: Employee) => {
         const namaKategori = item.kategori_pegawai?.nama_kategori || (
             item.kategori_pegawai_id === 1 ? "PNS" :
-            item.kategori_pegawai_id === 2 ? "PPPK Penuh Waktu" :
-            item.kategori_pegawai_id === 3 ? "PPPK Paruh Waktu" : ""
+                item.kategori_pegawai_id === 2 ? "PPPK Penuh Waktu" :
+                    item.kategori_pegawai_id === 3 ? "PPPK Paruh Waktu" : ""
         );
         const kode = item.kategori_pegawai?.kode_kategori || (
             item.kategori_pegawai_id === 1 ? "pns" :
-            item.kategori_pegawai_id === 2 ? "p3k_penuh" :
-            item.kategori_pegawai_id === 3 ? "p3k_paruh" : ""
+                item.kategori_pegawai_id === 2 ? "p3k_penuh" :
+                    item.kategori_pegawai_id === 3 ? "p3k_paruh" : ""
         );
 
         if (kode === "pns") {
@@ -241,7 +225,7 @@ export default function ManajemenPegawaiPage() {
 
     return (
         <div className="flex flex-col gap-8 max-w-7xl mx-auto p-1 sm:p-2 selection:bg-blue-600 selection:text-white">
-            
+
             {/* Header: Eyebrow + Title + Add Button */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-4 border-b border-slate-200/80">
                 <div className="space-y-2">
@@ -292,11 +276,10 @@ export default function ManajemenPegawaiPage() {
                                 setSelectedRole(role)
                                 setCurrentPage(1)
                             }}
-                            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                                selectedRole === role
-                                    ? "bg-white text-slate-900 shadow-sm"
-                                    : "text-slate-500 hover:text-slate-800"
-                            }`}
+                            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${selectedRole === role
+                                ? "bg-white text-slate-900 shadow-sm"
+                                : "text-slate-500 hover:text-slate-800"
+                                }`}
                         >
                             {role}
                         </button>
@@ -318,18 +301,18 @@ export default function ManajemenPegawaiPage() {
             {/* Main Table: Double-Bezel Hardware Architecture */}
             <div className="rounded-[2rem] bg-slate-100/90 border border-slate-200/90 p-2 shadow-sm">
                 <div className="rounded-[calc(2rem-0.5rem)] bg-white overflow-hidden shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
-                    
+
                     <div className="overflow-x-auto">
                         <Table>
                             <TableHeader className="bg-slate-50/80 border-b border-slate-100">
                                 <TableRow>
                                     <TableHead className="w-12 text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">NO</TableHead>
-                                    <TableHead className="min-w-[220px] text-[11px] font-bold uppercase tracking-wider text-slate-500">PEGAWAI</TableHead>
-                                    <TableHead className="min-w-[150px] text-[11px] font-bold uppercase tracking-wider text-slate-500">NIP</TableHead>
-                                    <TableHead className="min-w-[180px] text-[11px] font-bold uppercase tracking-wider text-slate-500">JABATAN</TableHead>
-                                    <TableHead className="min-w-[140px] text-[11px] font-bold uppercase tracking-wider text-slate-500">KATEGORI</TableHead>
-                                    <TableHead className="text-center min-w-[100px] text-[11px] font-bold uppercase tracking-wider text-slate-500">HAK AKSES</TableHead>
-                                    <TableHead className="text-right min-w-[120px] text-[11px] font-bold uppercase tracking-wider text-slate-500">AKSI</TableHead>
+                                    <TableHead className="min-w-55 text-[11px] font-bold uppercase tracking-wider text-slate-500">PEGAWAI</TableHead>
+                                    <TableHead className="min-w-37.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">NIP</TableHead>
+                                    <TableHead className="min-w-45 text-[11px] font-bold uppercase tracking-wider text-slate-500">JABATAN</TableHead>
+                                    <TableHead className="min-w-35 text-[11px] font-bold uppercase tracking-wider text-slate-500">KATEGORI</TableHead>
+                                    <TableHead className="text-center min-w-25 text-[11px] font-bold uppercase tracking-wider text-slate-500">HAK AKSES</TableHead>
+                                    <TableHead className="text-right min-w-30 text-[11px] font-bold uppercase tracking-wider text-slate-500">AKSI</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody className="divide-y divide-slate-100">
