@@ -8,12 +8,8 @@ import {
     Star,
     CheckCircle2,
     TrendingUp,
-    Filter,
-    Calendar,
     Building2,
-    Sparkles,
-    AlertCircle,
-    UserCheck
+    AlertCircle
 } from "lucide-react"
 import { format } from "date-fns"
 import { id as localeID } from "date-fns/locale"
@@ -131,7 +127,7 @@ export default function PenilaianKinerjaPage() {
 
     return (
         <div className="flex flex-col gap-8 max-w-7xl mx-auto p-1 sm:p-2 selection:bg-blue-600 selection:text-white">
-            
+
             {/* Header: Eyebrow + Title + Actions */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-4 border-b border-slate-200/80">
                 <div className="space-y-2">
@@ -168,7 +164,7 @@ export default function PenilaianKinerjaPage() {
 
             {/* Asymmetrical Bento Metrics: 4 Tiles */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                
+
                 {/* Tile 1: Total Penilaian */}
                 <div className="rounded-[1.75rem] bg-slate-100/90 border border-slate-200/90 p-1.5 shadow-sm">
                     <div className="h-full rounded-[calc(1.75rem-0.375rem)] bg-white p-5 flex flex-col justify-between space-y-3 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
@@ -280,18 +276,18 @@ export default function PenilaianKinerjaPage() {
             {/* Main Table: Double-Bezel Hardware Architecture */}
             <div className="rounded-[2rem] bg-slate-100/90 border border-slate-200/90 p-2 shadow-sm">
                 <div className="rounded-[calc(2rem-0.5rem)] bg-white overflow-hidden shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
-                    
+
                     <div className="overflow-x-auto">
                         <Table>
                             <TableHeader className="bg-slate-50/80 border-b border-slate-100">
                                 <TableRow>
                                     <TableHead className="w-16 text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">NO</TableHead>
-                                    <TableHead className="min-w-[220px] text-[11px] font-bold uppercase tracking-wider text-slate-500">PEGAWAI</TableHead>
-                                    <TableHead className="min-w-[140px] text-[11px] font-bold uppercase tracking-wider text-slate-500">JABATAN</TableHead>
-                                    <TableHead className="min-w-[140px] text-[11px] font-bold uppercase tracking-wider text-slate-500">PERIODE</TableHead>
-                                    <TableHead className="min-w-[180px] text-[11px] font-bold uppercase tracking-wider text-slate-500">PREDIKAT SKOR</TableHead>
-                                    <TableHead className="min-w-[220px] text-[11px] font-bold uppercase tracking-wider text-slate-500">CATATAN ATASAN</TableHead>
-                                    <TableHead className="text-right min-w-[130px] text-[11px] font-bold uppercase tracking-wider text-slate-500">TANGGAL DINILAI</TableHead>
+                                    <TableHead className="min-w-55-[11px] font-bold uppercase tracking-wider text-slate-500">PEGAWAI</TableHead>
+                                    <TableHead className="min-w-35 text-[11px] font-bold uppercase tracking-wider text-slate-500">JABATAN</TableHead>
+                                    <TableHead className="min-w-35 text-[11px] font-bold uppercase tracking-wider text-slate-500">PERIODE</TableHead>
+                                    <TableHead className="min-w-45 text-[11px] font-bold uppercase tracking-wider text-slate-500">PREDIKAT SKOR</TableHead>
+                                    <TableHead className="min-w-55 text-[11px] font-bold uppercase tracking-wider text-slate-500">CATATAN ATASAN</TableHead>
+                                    <TableHead className="text-right min-w-32.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">TANGGAL DINILAI</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody className="divide-y divide-slate-100">
