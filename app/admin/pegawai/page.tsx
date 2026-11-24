@@ -14,7 +14,8 @@ import {
     ShieldCheck,
     UserCheck,
     Briefcase,
-    Sparkles
+    Sparkles,
+    ArrowRightLeft
 } from "lucide-react"
 
 import { CustomPagination } from "@/components/CustomPagination"
@@ -42,6 +43,7 @@ import { cn } from "@/lib/utils"
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal"
 import { FormPegawaiModal, PegawaiData } from "@/components/FormPegawaiModal"
 import { ResetPasswordModal } from "@/components/ResetPasswordModal"
+import { ReassignSupervisorModal } from "@/components/ReassignSupervisorModal"
 
 import {
     getEmployees,
@@ -73,6 +75,7 @@ export default function ManajemenPegawaiPage() {
     const [formModeData, setFormModeData] = React.useState<any | null>(null)
     const [isResetModalOpen, setIsResetModalOpen] = React.useState(false)
     const [selectedResetPegawai, setSelectedResetPegawai] = React.useState<Employee | null>(null)
+    const [isReassignModalOpen, setIsReassignModalOpen] = React.useState(false)
 
     const [selectedRole, setSelectedRole] = React.useState<string>("Semua")
     const [debouncedSearch, setDebouncedSearch] = React.useState("")
@@ -142,6 +145,7 @@ export default function ManajemenPegawaiPage() {
             nama: item.nama,
             jabatan: item.jabatan?.nama_jabatan || "",
             jabatan_id: item.jabatan_id,
+            supervisor_id: item.supervisor_id,
             kategori_pegawai_id: item.kategori_pegawai_id || item.kategori_pegawai?.id,
             role: item.role,
         })
@@ -155,6 +159,7 @@ export default function ManajemenPegawaiPage() {
                 nama: data.nama,
                 role: data.role.toLowerCase(),
                 jabatan_id: data.jabatan_id ? Number(data.jabatan_id) : undefined,
+                supervisor_id: data.supervisor_id && data.supervisor_id !== "none" ? Number(data.supervisor_id) : undefined,
                 kategori_pegawai_id: data.kategori_pegawai_id ? Number(data.kategori_pegawai_id) : undefined,
                 password: data.password || undefined
             }
@@ -255,8 +260,15 @@ export default function ManajemenPegawaiPage() {
                     </p>
                 </div>
 
-                {/* Island Actions (Add Employee Button) */}
-                <div className="flex items-center gap-2.5">
+                {/* Island Actions (Reassign + Add Employee Button) */}
+                <div className="flex items-center gap-2.5 flex-wrap">
+                    <button
+                        onClick={() => setIsReassignModalOpen(true)}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 shadow-sm text-xs font-bold transition-all duration-200 active:scale-[0.98] cursor-pointer"
+                    >
+                        <ArrowRightLeft className="size-3.5 text-blue-600" />
+                        <span>Pindahkan Bawahan</span>
+                    </button>
                     <button
                         onClick={handleAddPegawaiClick}
                         className="group inline-flex items-center gap-3 pl-5 pr-2 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-md text-xs font-bold transition-all duration-300 active:scale-[0.98] cursor-pointer"
@@ -453,6 +465,12 @@ export default function ManajemenPegawaiPage() {
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={handleConfirmDelete}
                 itemName={selectedPegawai?.nama || "Pegawai"}
+            />
+
+            <ReassignSupervisorModal
+                isOpen={isReassignModalOpen}
+                onClose={() => setIsReassignModalOpen(false)}
+                onSuccess={fetchEmployees}
             />
 
         </div>

@@ -282,7 +282,7 @@ export default function PenilaianKinerjaPage() {
                             <TableHeader className="bg-slate-50/80 border-b border-slate-100">
                                 <TableRow>
                                     <TableHead className="w-16 text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">NO</TableHead>
-                                    <TableHead className="min-w-55-[11px] font-bold uppercase tracking-wider text-slate-500">PEGAWAI</TableHead>
+                                    <TableHead className="min-w-55 text-[11px] font-bold uppercase tracking-wider text-slate-500">PEGAWAI</TableHead>
                                     <TableHead className="min-w-35 text-[11px] font-bold uppercase tracking-wider text-slate-500">JABATAN</TableHead>
                                     <TableHead className="min-w-35 text-[11px] font-bold uppercase tracking-wider text-slate-500">PERIODE</TableHead>
                                     <TableHead className="min-w-45 text-[11px] font-bold uppercase tracking-wider text-slate-500">PREDIKAT SKOR</TableHead>

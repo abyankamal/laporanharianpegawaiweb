@@ -61,6 +61,40 @@ export interface BaseResponse {
     message: string;
 }
 
+export interface SupervisorOption {
+    id: number;
+    nip: string;
+    nama: string;
+    role: string;
+    jabatan?: {
+        id: number;
+        nama_jabatan: string;
+    } | null;
+}
+
+export interface SupervisorListResponse {
+    success: boolean;
+    message: string;
+    data: SupervisorOption[];
+}
+
+export interface UpdateEmployeePayload extends Partial<Employee> {
+    reassign_from_supervisor_id?: number;
+    reassign_to_supervisor_id?: number;
+}
+
+export interface ReassignSupervisorPayload {
+    from_supervisor_id?: number;
+    to_supervisor_id: number;
+    user_ids?: number[];
+}
+
+export interface ReassignSupervisorResponse extends BaseResponse {
+    data?: {
+        affected_rows: number;
+    };
+}
+
 export const getEmployees = async (params?: { search?: string; role?: string; page?: number; limit?: number }): Promise<EmployeeListResponse> => {
     const response = await axios.get('/api/admin/pegawai', { params });
     const data = response.data;
@@ -84,12 +118,33 @@ export const createEmployee = async (data: Partial<Employee>): Promise<BaseRespo
     };
 };
 
-export const updateEmployee = async (id: number, data: Partial<Employee>): Promise<BaseResponse> => {
+export const updateEmployee = async (id: number, data: UpdateEmployeePayload): Promise<BaseResponse> => {
     const response = await axios.put(`/api/admin/pegawai/${id}`, data);
     const result = response.data;
     return {
         ...result,
         success: result.success || result.status === "success"
+    };
+};
+
+export const getSupervisors = async (role?: string): Promise<SupervisorListResponse> => {
+    const response = await axios.get('/api/admin/pegawai/supervisors', {
+        params: role ? { role } : undefined,
+    });
+    const result = response.data;
+    return {
+        ...result,
+        success: result.success || result.status === "success",
+        data: result.data || [],
+    };
+};
+
+export const reassignSupervisor = async (payload: ReassignSupervisorPayload): Promise<ReassignSupervisorResponse> => {
+    const response = await axios.patch('/api/admin/pegawai/reassign-supervisor', payload);
+    const result = response.data;
+    return {
+        ...result,
+        success: result.success || result.status === "success",
     };
 };
 

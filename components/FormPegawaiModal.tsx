@@ -19,7 +19,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { getJabatans, Jabatan, KATEGORI_PEGAWAI_LIST } from "@/lib/api/employees"
+import { Info } from "lucide-react"
+import { getJabatans, getSupervisors, Jabatan, KATEGORI_PEGAWAI_LIST, SupervisorOption } from "@/lib/api/employees"
 
 export interface PegawaiData {
     id?: number
@@ -27,6 +28,7 @@ export interface PegawaiData {
     nama: string
     jabatan?: string
     jabatan_id?: number
+    supervisor_id?: number | null
     kategori_pegawai_id?: number
     role: string
 }
@@ -42,6 +44,7 @@ const DEFAULT_FORM_DATA = {
     nip: "",
     nama: "",
     jabatan_id: "",
+    supervisor_id: "none",
     kategori_pegawai_id: "",
     role: "",
     password: ""
@@ -57,25 +60,35 @@ export function FormPegawaiModal({
     const [formData, setFormData] = React.useState(DEFAULT_FORM_DATA)
     const [jabatans, setJabatans] = React.useState<Jabatan[]>([])
     const [loadingJabatans, setLoadingJabatans] = React.useState(false)
+    const [supervisors, setSupervisors] = React.useState<SupervisorOption[]>([])
+    const [loadingSupervisors, setLoadingSupervisors] = React.useState(false)
 
-    // Fetch jabatans on mount
+    // Fetch jabatans & supervisors on mount
     React.useEffect(() => {
-        const fetchJabatans = async () => {
+        const fetchOptions = async () => {
             setLoadingJabatans(true)
+            setLoadingSupervisors(true)
             try {
-                const response = await getJabatans()
-                if (response.success) {
-                    setJabatans(response.data)
+                const [jabatanRes, supervisorRes] = await Promise.all([
+                    getJabatans(),
+                    getSupervisors(),
+                ])
+                if (jabatanRes.success) {
+                    setJabatans(jabatanRes.data)
+                }
+                if (supervisorRes.success) {
+                    setSupervisors(supervisorRes.data || [])
                 }
             } catch (error) {
-                console.error("Error fetching jabatans:", error)
+                console.error("Error fetching form options:", error)
             } finally {
                 setLoadingJabatans(false)
+                setLoadingSupervisors(false)
             }
         }
 
         if (isOpen) {
-            fetchJabatans()
+            fetchOptions()
         }
     }, [isOpen])
 
@@ -87,6 +100,7 @@ export function FormPegawaiModal({
                     nip: pegawaiData.nip,
                     nama: pegawaiData.nama,
                     jabatan_id: pegawaiData.jabatan_id?.toString() || "",
+                    supervisor_id: pegawaiData.supervisor_id ? pegawaiData.supervisor_id.toString() : "none",
                     kategori_pegawai_id: pegawaiData.kategori_pegawai_id?.toString() || "",
                     role: pegawaiData.role.toLowerCase(),
                     password: "",
@@ -189,25 +203,61 @@ export function FormPegawaiModal({
                             </div>
                         </div>
 
-                        {/* Baris 4: Role Akses */}
-                        <div className="space-y-2">
-                            <Label htmlFor="role">Role Akses</Label>
-                            <Select
-                                value={formData.role}
-                                onValueChange={(val) => handleInputChange("role", val)}
-                                required
-                            >
-                                <SelectTrigger id="role">
-                                    <SelectValue placeholder="Pilih Role" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="lurah">Lurah</SelectItem>
-                                    <SelectItem value="sekertaris">Sekretaris</SelectItem>
-                                    <SelectItem value="kasi">Kasi</SelectItem>
-                                    <SelectItem value="staf">Staf</SelectItem>
-                                </SelectContent>
-                            </Select>
+                        {/* Baris 4: Role Akses & Atasan Langsung */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="role">Role Akses</Label>
+                                <Select
+                                    value={formData.role}
+                                    onValueChange={(val) => handleInputChange("role", val)}
+                                    required
+                                >
+                                    <SelectTrigger id="role">
+                                        <SelectValue placeholder="Pilih Role" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="lurah">Lurah</SelectItem>
+                                        <SelectItem value="sekertaris">Sekretaris</SelectItem>
+                                        <SelectItem value="kasi">Kasi</SelectItem>
+                                        <SelectItem value="staf">Staf</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="supervisor_id">Atasan Langsung</Label>
+                                <Select
+                                    value={formData.supervisor_id}
+                                    onValueChange={(val) => handleInputChange("supervisor_id", val)}
+                                    disabled={loadingSupervisors}
+                                >
+                                    <SelectTrigger id="supervisor_id">
+                                        <SelectValue placeholder={loadingSupervisors ? "Memuat..." : "Pilih Atasan"} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">Tidak Ada / Default</SelectItem>
+                                        {supervisors
+                                            .filter((s) => s.id !== pegawaiData?.id)
+                                            .map((s) => (
+                                                <SelectItem key={s.id} value={s.id.toString()}>
+                                                    {s.nama} ({s.role.toLowerCase() === "sekertaris" ? "Sekretaris" : s.role})
+                                                </SelectItem>
+                                            ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
+
+                        {isEditMode &&
+                            formData.role === "sekertaris" &&
+                            pegawaiData?.role.toLowerCase() !== "sekertaris" &&
+                            pegawaiData?.role.toLowerCase() !== "sekretaris" && (
+                                <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50/70 p-2.5 text-xs text-blue-800">
+                                    <Info className="size-4 shrink-0 mt-0.5 text-blue-600" />
+                                    <p>
+                                        Mengubah role menjadi Sekretaris akan otomatis memindahkan bawahan dari Sekretaris sebelumnya ke pegawai ini.
+                                    </p>
+                                </div>
+                            )}
 
                         {/* Baris 4: Password (Full Width) */}
                         <div className="space-y-2">

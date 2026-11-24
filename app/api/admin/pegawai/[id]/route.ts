@@ -9,7 +9,7 @@ export async function PUT(
         const token = req.cookies.get("admin_token")?.value
         const { id } = await params
         const body = await req.json()
-        const response = await fetch(`${BACKEND_URL}/api/web/admin/pegawai/${id}`, {
+        const response = await fetch(`${BACKEND_URL}/api/web/users/${id}`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
@@ -18,7 +18,10 @@ export async function PUT(
             body: JSON.stringify(body),
         })
         const data = await response.json()
-        return NextResponse.json(data)
+        if (data && data.status && typeof data.success === "undefined") {
+            data.success = data.status === "success"
+        }
+        return NextResponse.json(data, { status: response.status })
     } catch (error) {
         return NextResponse.json(
             { status: "error", message: "Gagal memperbarui data pegawai" },
